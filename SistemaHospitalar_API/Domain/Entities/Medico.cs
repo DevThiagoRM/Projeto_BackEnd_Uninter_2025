@@ -6,10 +6,14 @@ public class Medico
 
     public string CRM { get; set; } = string.Empty;
 
+    public string Nome => Usuario?.NomeCompleto ?? string.Empty;
+
     // Especialidade
     public int EspecialidadeId { get; set; }
     public Especialidade? Especialidade { get; set; }
 
     // Navegação
     public Usuario? Usuario { get; set; }
+
+    public bool Status { get; set; } = true;
 }

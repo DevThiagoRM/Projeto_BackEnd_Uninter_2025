@@ -12,13 +12,19 @@ namespace SistemaHospitalar_API.Application.Services
     {
         private readonly ILogger<UsuarioService> _logger;
         private readonly UserManager<Usuario> _userManager;
+        private readonly IMedicoService _medicoService;
+        private readonly IPacienteService _pacienteService;
 
         public UsuarioService(
             ILogger<UsuarioService> logger,
-            UserManager<Usuario> userManager)
+            UserManager<Usuario> userManager,
+            IMedicoService medicoService,
+            IPacienteService pacienteService)
         {
             _logger = logger;
             _userManager = userManager;
+            _medicoService = medicoService;
+            _pacienteService = pacienteService;
         }
 
         // ============================================================================
@@ -143,7 +149,6 @@ namespace SistemaHospitalar_API.Application.Services
             _logger.LogInformation("Iniciando criação de usuário.");
 
             var emailJaExiste = await _userManager.FindByEmailAsync(dto.Email);
-
             if (emailJaExiste != null)
             {
                 _logger.LogWarning("Erro ao criar: email já está sendo usado: {email}", dto.Email);
@@ -161,7 +166,6 @@ namespace SistemaHospitalar_API.Application.Services
             };
 
             var result = await _userManager.CreateAsync(novoUsuario, dto.Password);
-
             if (!result.Succeeded)
             {
                 _logger.LogError("Falha ao criar usuário. Erros: {erros}", string.Join(", ", result.Errors.Select(e => e.Description)));
@@ -170,6 +174,43 @@ namespace SistemaHospitalar_API.Application.Services
 
             _logger.LogInformation("Usuário criado com sucesso. ID: {id}", novoUsuario.Id);
 
+            if (dto.IsMedico == true)
+            {
+                if (dto.Medico != null)
+                {
+                    var medicoCriado = await _medicoService.CriarMedico(novoUsuario.Id, dto.Medico);
+
+                    if (medicoCriado == null)
+                    {
+                        _logger.LogError("Falha ao criar o médico para o usuário ID: {id}", novoUsuario.Id);
+                        throw new Exception("Erro ao criar médico.");
+                    }
+                    else
+                    {
+                        _logger.LogInformation("Médico criado com sucesso para o usuário ID: {id}", novoUsuario.Id);
+                    }
+                }
+            }
+
+            if (dto.IsPaciente == true)
+            {
+                if (dto.Paciente != null)
+                {
+                    var pacienteCriado = await _pacienteService.CriarPaciente(novoUsuario.Id, dto.Paciente);
+
+                    if (pacienteCriado == null)
+                    {
+                        _logger.LogError("Falha ao criar o paciente para o usuário ID: {id}", novoUsuario.Id);
+                        throw new Exception("Erro ao criar paciente.");
+                    }
+                    else
+                    {
+                        _logger.LogInformation("Paciente criado com sucesso para o usuário ID: {id}", novoUsuario.Id);
+                    }
+                }
+            }
+
+            // ======= Retorno =======
             return new VisualizarUsuarioDto
             {
                 Id = novoUsuario.Id,
@@ -181,15 +222,11 @@ namespace SistemaHospitalar_API.Application.Services
             };
         }
 
-        // ============================================================================
-        // UPDATE
-        // ============================================================================
         public async Task<VisualizarUsuarioDto?> EditarUsuario(Guid id, EditarUsuarioDto dto)
         {
             _logger.LogInformation("Iniciando edição do usuário ID: {id}", id);
 
             var usuarioAtual = await _userManager.FindByIdAsync(id.ToString());
-
             if (usuarioAtual == null)
             {
                 _logger.LogWarning("Usuário não encontrado para edição. ID: {id}", id);
@@ -198,6 +235,7 @@ namespace SistemaHospitalar_API.Application.Services
 
             _logger.LogDebug("Atualizando dados do usuário ID: {id}", id);
 
+            // ======= Atualiza dados do usuário =======
             usuarioAtual.NomeCompleto = dto.NomeCompleto ?? usuarioAtual.NomeCompleto;
             usuarioAtual.NomeExibicao = dto.NomeExibicao ?? usuarioAtual.NomeExibicao;
             usuarioAtual.DataNascimento = dto.DataNascimento ?? usuarioAtual.DataNascimento;
@@ -206,12 +244,29 @@ namespace SistemaHospitalar_API.Application.Services
             usuarioAtual.PhoneNumber = dto.PhoneNumber ?? usuarioAtual.PhoneNumber;
 
             var result = await _userManager.UpdateAsync(usuarioAtual);
-
             if (!result.Succeeded)
             {
                 _logger.LogError("Erro ao atualizar usuário ID: {id}. Erros: {erros}",
                     id, string.Join(", ", result.Errors.Select(e => e.Description)));
                 throw new Exception("Erro ao atualizar usuário.");
+            }
+
+            if (dto.IsMedico == true)
+            {
+                if (dto.Medico != null)
+                {
+                    await _medicoService.EditarMedico(id, dto.Medico);
+                    _logger.LogInformation("Médico atualizado com sucesso. ID: {id}", id);
+                }
+            }
+
+            if (dto.IsPaciente == true)
+            {
+                if (dto.Paciente != null)
+                {
+                    await _pacienteService.EditarPaciente(id, dto.Paciente);
+                    _logger.LogInformation("Paciente atualizado com sucesso. ID: {id}", id);
+                }
             }
 
             _logger.LogInformation("Usuário atualizado com sucesso. ID: {id}", id);
@@ -274,6 +329,23 @@ namespace SistemaHospitalar_API.Application.Services
             usuario.Status = false;
 
             var result = await _userManager.UpdateAsync(usuario);
+
+            if (result.Succeeded)
+            {
+                var tipoUsuario = await ObterUsuarioPorId(id);
+
+                if (tipoUsuario!.IsMedico == true)
+                {
+                    await _medicoService.ExcluirMedico(id);
+                    _logger.LogInformation("Médico excluído com sucesso. ID: {id}", id);
+                }
+
+                if (tipoUsuario.IsPaciente == true)
+                {
+                    await _pacienteService.ExcluirPaciente(id);
+                    _logger.LogInformation("Paciente excluído com sucesso. ID: {id}", id);
+                }
+            }
 
             if (!result.Succeeded)
             {

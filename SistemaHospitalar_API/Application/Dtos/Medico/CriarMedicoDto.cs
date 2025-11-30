@@ -4,6 +4,7 @@ namespace SistemaHospitalar_API.Application.Dtos.Medico
 {
     public class CriarMedicoDto
     {
+        public Guid Id { get; set; }
         [Required]
         public string CRM { get; set; } = string.Empty;
 

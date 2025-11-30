@@ -77,6 +77,8 @@ builder.Services.AddControllers();
 //=======================================================
 builder.Services.AddScoped<IEspecialidadeRepository, EspecialidadeRepository>();
 builder.Services.AddScoped<IConsultaRepository, ConsultaRepository>();
+builder.Services.AddScoped<IMedicoRepository, MedicoRepository>();
+builder.Services.AddScoped<IPacienteRepository, PacienteRepository>();
 
 //=======================================================
 // Services
@@ -84,6 +86,8 @@ builder.Services.AddScoped<IConsultaRepository, ConsultaRepository>();
 builder.Services.AddScoped<IEspecialidadeService, EspecialidadeService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IConsultaService, ConsultaService>();
+builder.Services.AddScoped<IMedicoService, MedicoService>();
+builder.Services.AddScoped<IPacienteService, PacienteService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 //=======================================================

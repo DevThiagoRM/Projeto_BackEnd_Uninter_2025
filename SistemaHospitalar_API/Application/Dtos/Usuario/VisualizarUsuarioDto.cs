@@ -16,5 +16,8 @@ namespace SistemaHospitalar_API.Application.Dtos.Usuario
 
         public VisualizarMedicoDto? Medico { get; set; }
         public VisualizarPacienteDto? Paciente { get; set; }
+
+        public bool IsMedico { get; set; }
+        public bool IsPaciente { get; set; }
     }
 }

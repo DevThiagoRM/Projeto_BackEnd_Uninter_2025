@@ -18,7 +18,10 @@ namespace SistemaHospitalar_API.Domain.Entities
         public string? RefreshToken { get; set; }
         public DateTime? RefreshTokenExpiry { get; set; }
 
-        public bool Status { get; set; }
+        public bool IsMedico { get; set; } = false;
+        public bool IsPaciente { get; set; } = false;
+        public bool Status { get; set; } = true;
+        
 
     }
 }

@@ -1,6 +1,11 @@
-﻿namespace SistemaHospitalar_API.Application.Constructors.Services
+﻿using SistemaHospitalar_API.Application.Dtos.Medico;
+
+namespace SistemaHospitalar_API.Application.Constructors.Services
 {
-    public class IMedicoService
+    public interface IMedicoService
     {
+        Task<VisualizarMedicoDto> CriarMedico(Guid id, CriarMedicoDto dto);
+        Task<VisualizarMedicoDto?> EditarMedico(Guid id, EditarMedicoDto dto);
+        Task<bool> ExcluirMedico(Guid id);
     }
 }

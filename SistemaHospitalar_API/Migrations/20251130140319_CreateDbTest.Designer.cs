@@ -12,7 +12,7 @@ using SistemaHospitalar_API.Infrastructure.Data;
 namespace SistemaHospitalar_API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251130051844_CreateDbTest")]
+    [Migration("20251130140319_CreateDbTest")]
     partial class CreateDbTest
     {
         /// <inheritdoc />
@@ -36,6 +36,9 @@ namespace SistemaHospitalar_API.Migrations
 
                     b.Property<int>("EspecialidadeId")
                         .HasColumnType("int");
+
+                    b.Property<bool>("Status")
+                        .HasColumnType("bit");
 
                     b.HasKey("Id");
 
@@ -184,6 +187,9 @@ namespace SistemaHospitalar_API.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("Status")
+                        .HasColumnType("bit");
+
                     b.HasKey("Id");
 
                     b.ToTable("Pacientes");
@@ -262,6 +268,12 @@ namespace SistemaHospitalar_API.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsMedico")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPaciente")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
 
@@ -292,6 +304,12 @@ namespace SistemaHospitalar_API.Migrations
 
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
+
+                    b.Property<string>("RefreshToken")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("RefreshTokenExpiry")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");

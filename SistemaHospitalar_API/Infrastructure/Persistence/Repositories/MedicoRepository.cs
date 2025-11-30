@@ -1,32 +1,57 @@
-﻿using SistemaHospitalar_API.Application.Constructors.Repositories;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using SistemaHospitalar_API.Application.Constructors.Repositories;
+using SistemaHospitalar_API.Domain.Entities;
+using SistemaHospitalar_API.Infrastructure.Data;
 
 namespace SistemaHospitalar_API.Infrastructure.Persistence.Repositories
 {
     public class MedicoRepository : IMedicoRepository
     {
-        public Task<Medico> CriarMedico(Medico medico)
+        private readonly AppDbContext _context;
+
+        public MedicoRepository(AppDbContext context)
         {
-            throw new NotImplementedException();
+            _context = context;
         }
 
-        public Task<Medico?> EditarMedico(Guid id, Medico medico)
+        public async Task<Medico> CriarMedico(Medico medico)
         {
-            throw new NotImplementedException();
+            await _context.Medicos.AddAsync(medico);
+            await _context.SaveChangesAsync();
+
+            var medicoComEspecialidade = await _context.Medicos
+                                                .Include(m => m.Especialidade)
+                                                .FirstOrDefaultAsync(m => m.Id == medico.Id);
+            return medicoComEspecialidade!;
         }
 
-        public Task<bool> ExcluirMedico(Guid id)
+        public async Task<Medico?> EditarMedico(Guid id, Medico medico)
         {
-            throw new NotImplementedException();
+            var medicoAtual = await _context.Medicos
+                .AsTracking()
+                .FirstOrDefaultAsync(e => e.Id == id);
+
+            if (medicoAtual == null)
+                return null;
+
+            medicoAtual.CRM = medico.CRM ?? medicoAtual.CRM;
+            medicoAtual.EspecialidadeId = medico.EspecialidadeId;
+
+            await _context.SaveChangesAsync();
+            return medicoAtual;
         }
 
-        public Task<Medico?> ObterMedicoPorId(Guid id)
+        public async Task<bool> ExcluirMedico(Guid id)
         {
-            throw new NotImplementedException();
-        }
+            var medico = await _context.Medicos.FirstOrDefaultAsync(m => m.Id == id);
 
-        public Task<IEnumerable<Medico>> ObterMedicos()
-        {
-            throw new NotImplementedException();
+            if (medico == null)
+                return false;
+
+            medico.Status = false;
+
+            return await _context.SaveChangesAsync() > 0;
         }
     }
 }

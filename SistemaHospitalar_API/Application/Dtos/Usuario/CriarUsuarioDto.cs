@@ -31,6 +31,8 @@ namespace SistemaHospitalar_API.Application.Dtos.Usuario
         public CriarMedicoDto? Medico { get; set; }
         public CriarPacienteDto? Paciente { get; set; }
 
+        public bool IsMedico { get; set; } = false;
+        public bool IsPaciente { get; set; } = false;
         public bool Status { get; set; }
     }
 }

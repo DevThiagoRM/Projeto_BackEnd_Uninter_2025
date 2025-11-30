@@ -19,6 +19,8 @@ namespace SistemaHospitalar_API.Application.Dtos.Usuario
         public EditarMedicoDto? Medico { get; set; }
         public EditarPacienteDto? Paciente { get; set; }
 
+        public bool IsMedico { get; set; } = false;
+        public bool IsPaciente { get; set; } = false;
         public bool Status { get; set; }
     }
 }

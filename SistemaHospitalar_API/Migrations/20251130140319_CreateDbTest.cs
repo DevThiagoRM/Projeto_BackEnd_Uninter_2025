@@ -34,6 +34,10 @@ namespace SistemaHospitalar_API.Migrations
                     NomeExibicao = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     DataNascimento = table.Column<DateTime>(type: "datetime2", nullable: true),
                     AlterarSenhaNoProximoLogin = table.Column<bool>(type: "bit", nullable: false),
+                    RefreshToken = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    RefreshTokenExpiry = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsMedico = table.Column<bool>(type: "bit", nullable: false),
+                    IsPaciente = table.Column<bool>(type: "bit", nullable: false),
                     Status = table.Column<bool>(type: "bit", nullable: false),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -179,7 +183,8 @@ namespace SistemaHospitalar_API.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Cpf = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Cpf = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Status = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -197,7 +202,8 @@ namespace SistemaHospitalar_API.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CRM = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    EspecialidadeId = table.Column<int>(type: "int", nullable: false)
+                    EspecialidadeId = table.Column<int>(type: "int", nullable: false),
+                    Status = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
