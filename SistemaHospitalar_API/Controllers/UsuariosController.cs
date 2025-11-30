@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SistemaHospitalar_API.Application.Constructors.Services;
 using SistemaHospitalar_API.Application.Dtos.Usuario;
+using SistemaHospitalar_API.Application.Services;
 
 namespace SistemaHospitalar_API.Controllers
 {
@@ -111,6 +112,23 @@ namespace SistemaHospitalar_API.Controllers
                 _logger.LogError(ex, "Erro interno ao atualizar usuário.");
                 return StatusCode(500, new { message = "Erro interno ao atualizar usuário." });
             }
+        }
+
+        // =======================================================
+        // ALTERAR SENHA
+        // =======================================================
+        [HttpPost("alterar-senha")]
+        public async Task<IActionResult> AlterarSenha([FromQuery] string email, [FromBody] AlterarSenhaDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var sucesso = await _service.AlterarSenha(email, dto);
+
+            if (!sucesso)
+                return BadRequest(new { Mensagem = "Não foi possível alterar a senha." });
+
+            return Ok(new { Mensagem = "Senha alterada com sucesso." });
         }
 
         // ============================================================================

@@ -10,6 +10,7 @@ namespace SistemaHospitalar_API.Application.Constructors.Services
         Task<VisualizarUsuarioDto?> ObterUsuarioPorEmail(string email);
         Task<VisualizarUsuarioDto> CriarUsuario(CriarUsuarioDto dto);
         Task<VisualizarUsuarioDto?> EditarUsuario(Guid id, EditarUsuarioDto dto);
+        Task<bool> AlterarSenha(string email, AlterarSenhaDto dto);
         Task<bool> ExcluirUsuario(Guid id);
     }
 }

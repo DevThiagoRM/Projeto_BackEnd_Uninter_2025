@@ -16,6 +16,9 @@ namespace SistemaHospitalar_API.Application.Dtos.Usuario
         public string Password { get; set; } = string.Empty;
         public string? PhoneNumber { get; set; }
 
+        public EditarMedicoDto? Medico { get; set; }
+        public EditarPacienteDto? Paciente { get; set; }
+
         public bool Status { get; set; }
     }
 }

@@ -227,6 +227,35 @@ namespace SistemaHospitalar_API.Application.Services
             };
         }
 
+        public async Task<bool> AlterarSenha(string email, AlterarSenhaDto dto)
+        {
+            _logger.LogInformation("Iniciando alteração de senha para usuário: {email}", email);
+
+            var usuario = await _userManager.FindByEmailAsync(email);
+            if (usuario == null)
+            {
+                _logger.LogWarning("Usuário não encontrado para alteração de senha: {email}", email);
+                return false;
+            }
+
+            // Gerar token de alteração de senha
+            var resetToken = await _userManager.GeneratePasswordResetTokenAsync(usuario);
+
+            // Alterar a senha usando o token
+            var result = await _userManager.ResetPasswordAsync(usuario, resetToken, dto.NovaSenha);
+
+            if (!result.Succeeded)
+            {
+                _logger.LogError("Falha ao alterar senha para {email}. Erros: {erros}",
+                    email, string.Join(", ", result.Errors.Select(e => e.Description)));
+                return false;
+            }
+
+            _logger.LogInformation("Senha alterada com sucesso para {email}", email);
+            return true;
+        }
+
+
         // ============================================================================
         // DELETE
         // ============================================================================
