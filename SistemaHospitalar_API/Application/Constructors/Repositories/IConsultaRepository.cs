@@ -7,10 +7,11 @@ namespace SistemaHospitalar_API.Application.Constructors.Repositories
     {
         Task<IEnumerable<Consulta>> ObterConsultas();
         Task<Consulta?> ObterConsultasPorId(Guid id);
-        Task<List<Consulta>> ObterConsultasPorMedicoId(Guid medicoId);
-        Task<List<Consulta>> ObterConsultasPorMedicoNome(string medicoNome);
-        Task<List<Consulta>> ObterConsultasPorPacienteId(Guid pacienteId);
-        Task<List<Consulta>> ObterConsultasPorPacienteNome(string pacienteNome);
+        Task<IEnumerable<Consulta>> ObterConsultasPorMedicoId(Guid medicoId);
+        Task<IEnumerable<Consulta>> ObterConsultasPorMedicoNome(string medicoNome);
+        Task<IEnumerable<Consulta>> ObterConsultasPorPacienteId(Guid pacienteId);
+        Task<IEnumerable<Consulta>> ObterConsultasPorPacienteNome(string pacienteNome);
+        Task<IEnumerable<Consulta>> ObterConsultasPorPeriodo(DateTime? dataInicial, DateTime? dataFinal);
         Task<Consulta> CriarConsulta(Consulta consulta);
         Task<Consulta?> EditarConsulta(Guid id, Consulta consulta);
         Task<bool> CancelarConsulta(Guid id, string motivo);

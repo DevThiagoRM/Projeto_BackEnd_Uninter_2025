@@ -79,6 +79,30 @@ namespace SistemaHospitalar_API.Controllers
         }
 
         // ============================================================================
+        // GET BY PERÍODO
+        // ============================================================================  
+        [HttpGet("periodo")]
+        public async Task<ActionResult<IEnumerable<VisualizarConsultaDto>>> ObterConsultasPorPeriodo(
+            [FromQuery] DateTime? dataInicial,
+            [FromQuery] DateTime? dataFinal)
+        {
+            try
+            {
+                var consultas = await _service.ObterConsultasPorPeriodo(dataInicial, dataFinal);
+                return Ok(consultas);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                // Logar o erro se tiver ILogger injetado
+                return StatusCode(500, new { message = "Erro interno ao obter consultas por período." });
+            }
+        }
+
+        // ============================================================================
         // POST
         // ============================================================================
         [HttpPost]

@@ -45,7 +45,7 @@ namespace SistemaHospitalar_API.Infrastructure.Persistence.Repositories
         // ============================================================================
         // GET BY MEDICO ID
         // ============================================================================
-        public async Task<List<Consulta>> ObterConsultasPorMedicoId(Guid medicoId)
+        public async Task<IEnumerable<Consulta>> ObterConsultasPorMedicoId(Guid medicoId)
         {
             return await _context.Consultas
                 .Include(c => c.Paciente)
@@ -60,7 +60,7 @@ namespace SistemaHospitalar_API.Infrastructure.Persistence.Repositories
         // ============================================================================
         // GET BY PACIENTE ID
         // ============================================================================
-        public async Task<List<Consulta>> ObterConsultasPorPacienteId(Guid pacienteId)
+        public async Task<IEnumerable<Consulta>> ObterConsultasPorPacienteId(Guid pacienteId)
         {
             return await _context.Consultas
                 .Include(c => c.Paciente)
@@ -75,7 +75,7 @@ namespace SistemaHospitalar_API.Infrastructure.Persistence.Repositories
         // ============================================================================
         // GET BY MEDICO NOME
         // ============================================================================
-        public async Task<List<Consulta>> ObterConsultasPorMedicoNome(string medicoNome)
+        public async Task<IEnumerable<Consulta>> ObterConsultasPorMedicoNome(string medicoNome)
         {
             return await _context.Consultas
                 .Include(c => c.Paciente)
@@ -91,7 +91,7 @@ namespace SistemaHospitalar_API.Infrastructure.Persistence.Repositories
         // ============================================================================
         // GET BY PACIENTE NOME
         // ============================================================================
-        public async Task<List<Consulta>> ObterConsultasPorPacienteNome(string pacienteNome)
+        public async Task<IEnumerable<Consulta>> ObterConsultasPorPacienteNome(string pacienteNome)
         {
             return await _context.Consultas
                 .Include(c => c.Paciente)
@@ -102,6 +102,35 @@ namespace SistemaHospitalar_API.Infrastructure.Persistence.Repositories
                             EF.Functions.Like(c.Paciente.Usuario.NomeCompleto, $"%{pacienteNome}%"))
                 .AsNoTracking()
                 .ToListAsync();
+        }
+
+        // ============================================================================
+        // GET BY PERÍODO
+        // ============================================================================
+
+        public async Task<IEnumerable<Consulta>> ObterConsultasPorPeriodo(DateTime? dataInicial, DateTime? dataFinal)
+        {
+            var query = _context.Consultas
+                                .AsNoTracking()
+                                .Include(c => c.Medico)
+                                    .ThenInclude(m => m!.Usuario)
+                                .Include(c => c.Paciente)
+                                    .ThenInclude(p => p!.Usuario)
+                                .AsQueryable();
+
+            if (dataInicial.HasValue)
+            {
+                query = query.Where(c => c.HorarioConsulta >= dataInicial.Value);
+            }
+
+            if (dataFinal.HasValue)
+            {
+                query = query.Where(c => c.HorarioConsulta <= dataFinal.Value);
+            }
+
+            query = query.OrderBy(c => c.HorarioConsulta);
+
+            return await query.ToListAsync();
         }
 
         // ============================================================================

@@ -135,6 +135,28 @@ namespace SistemaHospitalar_API.Application.Services
         }
 
         // ============================================================================
+        // GET BY PERIODO
+        // ============================================================================
+        public async Task<IEnumerable<VisualizarConsultaDto>> ObterConsultasPorPeriodo(DateTime? dataInicial, DateTime? dataFinal)
+        {
+            if (dataInicial.HasValue && dataFinal.HasValue && dataFinal < dataInicial)
+                throw new ArgumentException("Data final não pode ser menor que a data inicial.");
+
+            var consultas = await _repo.ObterConsultasPorPeriodo(dataInicial, dataFinal);
+
+            return consultas.Select(c => new VisualizarConsultaDto
+            {
+                Id = c.Id,
+                HorarioConsulta = c.HorarioConsulta,
+                NomeMedico = c.Medico?.Usuario?.NomeCompleto ?? string.Empty,
+                NomePaciente = c.Paciente?.Usuario?.NomeCompleto ?? string.Empty,
+                EspecialidadeMedico = c.Medico?.Especialidade?.Nome ?? string.Empty,
+                Observacao = c.Observacao,
+                Status = c.Status
+            });
+        }
+
+        // ============================================================================
         // POST
         // ============================================================================
         public async Task<VisualizarConsultaDto> CriarConsulta(CriarConsultaDto dto)
@@ -197,5 +219,7 @@ namespace SistemaHospitalar_API.Application.Services
         {
             return await _repo.CancelarConsulta(id, motivo);
         }
+
+
     }
 }
