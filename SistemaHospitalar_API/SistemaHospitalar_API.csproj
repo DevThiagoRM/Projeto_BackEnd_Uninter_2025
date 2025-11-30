@@ -21,14 +21,4 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Application\Constructors\" />
-    <Folder Include="Application\Constructors\Repositories\" />
-    <Folder Include="Application\Constructors\Services\" />
-    <Folder Include="Application\Services\" />
-    <Folder Include="Infrastructure\Persistence\Repositories\" />
-    <Folder Include="Infrastructure\Persistence\" />
-    <Folder Include="Controllers\" />
-  </ItemGroup>
-
 </Project>
