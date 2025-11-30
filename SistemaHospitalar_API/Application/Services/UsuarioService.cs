@@ -210,6 +210,11 @@ namespace SistemaHospitalar_API.Application.Services
 
             _logger.LogInformation("Usuário criado com sucesso. ID: {id}, Email: {email}", novoUsuario.Id, novoUsuario.Email);
 
+            string role = dto.IsMedico ? "MEDICO" :
+              dto.IsPaciente ? "PACIENTE" : "RECEPCAO";
+
+            await _userManager.AddToRoleAsync(novoUsuario, role);
+
             if (dto.IsMedico && dto.Medico != null)
             {
                 _logger.LogInformation("Criando médico para o usuário ID: {id}", novoUsuario.Id);

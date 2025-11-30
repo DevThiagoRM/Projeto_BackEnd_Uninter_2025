@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using SistemaHospitalar_API.Application.Constructors.Services;
 using SistemaHospitalar_API.Application.Dtos.Usuario;
@@ -24,6 +25,7 @@ namespace SistemaHospitalar_API.Controllers
         // ========================================================================
         // GET ALL
         // ========================================================================
+        [Authorize(Roles = "ADMIN,RECEPCAO")]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -44,6 +46,7 @@ namespace SistemaHospitalar_API.Controllers
         // ========================================================================
         // GET BY ID
         // ========================================================================
+        [Authorize(Roles = "ADMIN,RECEPCAO")]
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -71,6 +74,7 @@ namespace SistemaHospitalar_API.Controllers
         // ========================================================================
         // GET BY EMAIL
         // ========================================================================
+        [Authorize(Roles = "ADMIN,RECEPCAO")]
         [HttpGet("email/{email}")]
         public async Task<IActionResult> GetByEmail(string email)
         {
@@ -98,6 +102,7 @@ namespace SistemaHospitalar_API.Controllers
         // ========================================================================
         // POST - CREATE
         // ========================================================================
+        [Authorize(Roles = "ADMIN")]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CriarUsuarioDto dto)
         {
@@ -128,6 +133,7 @@ namespace SistemaHospitalar_API.Controllers
         // ========================================================================
         // PUT - UPDATE
         // ========================================================================
+        [Authorize(Roles = "ADMIN")]
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] EditarUsuarioDto dto)
         {
@@ -164,6 +170,7 @@ namespace SistemaHospitalar_API.Controllers
         // ========================================================================
         // ALTERAR SENHA
         // ========================================================================
+        [Authorize]
         [HttpPost("alterar-senha")]
         public async Task<IActionResult> AlterarSenha([FromQuery] string email, [FromBody] AlterarSenhaDto dto)
         {
@@ -195,6 +202,7 @@ namespace SistemaHospitalar_API.Controllers
         // ========================================================================
         // DELETE
         // ========================================================================
+        [Authorize(Roles = "ADMIN")]
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)
         {

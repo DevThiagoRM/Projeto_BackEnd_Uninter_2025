@@ -6,10 +6,10 @@ using Microsoft.OpenApi.Models;
 using SistemaHospitalar_API.Application.Constructors.Repositories;
 using SistemaHospitalar_API.Application.Constructors.Services;
 using SistemaHospitalar_API.Application.Services;
+using SistemaHospitalar_API.Data;
 using SistemaHospitalar_API.Domain.Entities;
 using SistemaHospitalar_API.Infrastructure.Data;
 using SistemaHospitalar_API.Infrastructure.Persistence.Repositories;
-using SistemaHospitalar_API.Infrastructure.Seed;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -146,15 +146,12 @@ using (var scope = app.Services.CreateScope())
     var services = scope.ServiceProvider;
     try
     {
-        var context = services.GetRequiredService<AppDbContext>();
-        var userManager = services.GetRequiredService<UserManager<Usuario>>();
-        var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
-
         // Aplicar migrations automaticamente (opcional)
+        var context = services.GetRequiredService<AppDbContext>();
         await context.Database.MigrateAsync();
 
-        // Executar seed
-        await AppDbContextSeed.SeedAsync(context, userManager, roleManager);
+        // Executar seed usando a classe correta
+        await DatabaseSeeder.SeedAsync(services);
 
         Console.WriteLine("Seed inicial aplicado com sucesso!");
     }

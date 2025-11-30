@@ -230,25 +230,76 @@ namespace SistemaHospitalar_API.Application.Services
         // ====================================================================
         public async Task<VisualizarConsultaDto> CriarConsulta(CriarConsultaDto dto)
         {
-            _logger.LogInformation("Iniciando criação de consulta. MédicoID={medicoId}, PacienteID={pacienteId}, Horario={horario}", dto.MedicoId, dto.PacienteId, dto.HorarioConsulta);
+            _logger.LogInformation("Iniciando criação de consulta. MédicoID={medicoId}, PacienteID={pacienteId}, Horario={horario}",
+                dto.MedicoId, dto.PacienteId, dto.HorarioConsulta);
 
-            // Valida médico ocupado
+            // ============================================================
+            // VALIDAÇÃO 1: Consulta não pode ser agendada no passado
+            // ============================================================
+            if (dto.HorarioConsulta < DateTime.Now)
+            {
+                _logger.LogWarning("Tentativa de agendar consulta no passado. Horário: {horario}", dto.HorarioConsulta);
+                throw new InvalidOperationException("Não é possível agendar consultas no passado.");
+            }
+
+            // ============================================================
+            // VALIDAÇÃO 2: Duração padrão de 20 minutos
+            // ============================================================
+            var horarioFimConsulta = dto.HorarioConsulta.AddMinutes(20);
             var consultasMedico = await _repo.ObterConsultasPorMedicoId(dto.MedicoId);
-            if (consultasMedico.Any(c => c.HorarioConsulta == dto.HorarioConsulta && c.Status))
-            {
-                _logger.LogWarning("Falha ao criar consulta: médico ocupado no horário {horario}", dto.HorarioConsulta);
-                throw new InvalidOperationException("O médico já possui uma consulta nesse horário.");
-            }
-
-            // Valida paciente ocupado
             var consultasPaciente = await _repo.ObterConsultasPorPacienteId(dto.PacienteId);
-            if (consultasPaciente.Any(c => c.HorarioConsulta == dto.HorarioConsulta && c.Status))
+
+            // Valida médico ocupado (considerando duração de 20 minutos)
+            var medicoOcupado = consultasMedico.Any(c =>
+                c.Status &&
+                c.HorarioConsulta < horarioFimConsulta &&
+                c.HorarioConsulta.AddMinutes(20) > dto.HorarioConsulta
+            );
+
+            if (medicoOcupado)
             {
-                _logger.LogWarning("Falha ao criar consulta: paciente ocupado no horário {horario}", dto.HorarioConsulta);
-                throw new InvalidOperationException("O paciente já possui uma consulta nesse horário.");
+                _logger.LogWarning("Falha ao criar consulta: médico ocupado no período {inicio} a {fim}",
+                    dto.HorarioConsulta, horarioFimConsulta);
+                throw new InvalidOperationException("O médico já possui uma consulta agendada neste horário ou nos próximos 20 minutos.");
             }
 
-            // Criação da consulta
+            // Valida paciente ocupado (considerando duração de 20 minutos)
+            var pacienteOcupado = consultasPaciente.Any(c =>
+                c.Status &&
+                c.HorarioConsulta < horarioFimConsulta &&
+                c.HorarioConsulta.AddMinutes(20) > dto.HorarioConsulta
+            );
+
+            if (pacienteOcupado)
+            {
+                _logger.LogWarning("Falha ao criar consulta: paciente ocupado no período {inicio} a {fim}",
+                    dto.HorarioConsulta, horarioFimConsulta);
+                throw new InvalidOperationException("O paciente já possui uma consulta agendada neste horário ou nos próximos 20 minutos.");
+            }
+
+            // ============================================================
+            // VALIDAÇÃO 3: Validações adicionais de integridade
+            // ============================================================
+
+            // Valida se médico existe e está ativo
+            var medicoAtivo = consultasMedico.Any(); // Se retornou consultas, o médico existe
+            if (!medicoAtivo)
+            {
+                _logger.LogWarning("Médico não encontrado ou inativo. ID: {medicoId}", dto.MedicoId);
+                throw new InvalidOperationException("Médico não encontrado ou inativo.");
+            }
+
+            // Valida se paciente existe e está ativo
+            var pacienteAtivo = consultasPaciente.Any(); // Se retornou consultas, o paciente existe
+            if (!pacienteAtivo)
+            {
+                _logger.LogWarning("Paciente não encontrado ou inativo. ID: {pacienteId}", dto.PacienteId);
+                throw new InvalidOperationException("Paciente não encontrado ou inativo.");
+            }
+
+            // ============================================================
+            // CRIAÇÃO DA CONSULTA
+            // ============================================================
             var consulta = new Consulta
             {
                 PacienteId = dto.PacienteId,
@@ -259,7 +310,8 @@ namespace SistemaHospitalar_API.Application.Services
 
             var criada = await _repo.CriarConsulta(consulta);
 
-            _logger.LogInformation("Consulta criada com sucesso. ID={id}", criada.Id);
+            _logger.LogInformation("Consulta criada com sucesso. ID={id}, Horário={horario}, Duração=20min",
+                criada.Id, criada.HorarioConsulta);
 
             return new VisualizarConsultaDto
             {

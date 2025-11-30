@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using SistemaHospitalar_API.Application.Constructors.Services;
 using SistemaHospitalar_API.Application.Dtos.Especialidade;
@@ -23,6 +24,7 @@ namespace SistemaHospitalar_API.Controllers
         // ========================================================================
         // GET ALL
         // ========================================================================
+        [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<VisualizarEspecialidadeDto>>> ObterEspecialidades()
         {
@@ -43,6 +45,7 @@ namespace SistemaHospitalar_API.Controllers
         // ========================================================================
         // GET BY ID
         // ========================================================================
+        [Authorize]
         [HttpGet("{id:int}")]
         public async Task<ActionResult<VisualizarEspecialidadeDto?>> ObterEspecialidadePorId(int id)
         {
@@ -70,6 +73,7 @@ namespace SistemaHospitalar_API.Controllers
         // ========================================================================
         // POST
         // ========================================================================
+        [Authorize(Roles = "ADMIN")]
         [HttpPost]
         public async Task<ActionResult<VisualizarEspecialidadeDto>> CriarEspecialidade([FromBody] CriarEspecialidadeDto dto)
         {
@@ -100,6 +104,7 @@ namespace SistemaHospitalar_API.Controllers
         // ========================================================================
         // PUT
         // ========================================================================
+        [Authorize(Roles = "ADMIN")]
         [HttpPut("{id:int}")]
         public async Task<ActionResult<VisualizarEspecialidadeDto?>> EditarEspecialidade(int id, [FromBody] EditarEspecialidadeDto dto)
         {
@@ -136,6 +141,7 @@ namespace SistemaHospitalar_API.Controllers
         // ========================================================================
         // DELETE
         // ========================================================================
+        [Authorize(Roles = "ADMIN")]
         [HttpDelete("{id:int}")]
         public async Task<ActionResult> ExcluirEspecialidade(int id)
         {
