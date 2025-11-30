@@ -1,33 +1,74 @@
-﻿using SistemaHospitalar_API.Application.Constructors.Repositories;
+﻿using Microsoft.EntityFrameworkCore;
+using SistemaHospitalar_API.Application.Constructors.Repositories;
 using SistemaHospitalar_API.Domain.Entities;
+using SistemaHospitalar_API.Infrastructure.Data;
 
 namespace SistemaHospitalar_API.Infrastructure.Persistence.Repositories
 {
     public class EspecialidadeRepository : IEspecialidadeRepository
     {
-        public Task<Especialidade> CriarEspecialidade(Especialidade especialidade)
+        private readonly AppDbContext _context;
+
+        public EspecialidadeRepository(AppDbContext context)
         {
-            throw new NotImplementedException();
+            _context = context;
         }
 
-        public Task<Especialidade?> EditarEspecialidade(int id, Especialidade especialidade)
+        // GET
+        public async Task<IEnumerable<Especialidade>> ObterEspecialidades()
         {
-            throw new NotImplementedException();
+            return await _context.Especialidades
+                .AsNoTracking()
+                .ToListAsync();
         }
 
-        public Task<bool> ExcluirEspecialidade(int id)
+        public async Task<Especialidade?> ObterEspecialidadePorId(int id)
         {
-            throw new NotImplementedException();
+            return await _context.Especialidades
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.Id == id);
         }
 
-        public Task<Especialidade?> ObterEspecialidadePorId(int id)
+        public async Task<Especialidade?> ObterEspecialidadePorNome(string nome)
         {
-            throw new NotImplementedException();
+            return await _context.Especialidades
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.Nome == nome);
         }
 
-        public Task<IEnumerable<Especialidade>> ObterEspecialidades()
+        // POST
+        public async Task<Especialidade> CriarEspecialidade(Especialidade especialidade)
         {
-            throw new NotImplementedException();
+            await _context.Especialidades.AddAsync(especialidade);
+            await _context.SaveChangesAsync();
+            return especialidade;
+        }
+
+        // PUT
+        public async Task<Especialidade?> EditarEspecialidade(int id, Especialidade especialidade)
+        {
+            var especialidadeAtual = await _context.Especialidades
+                .AsTracking()
+                .FirstOrDefaultAsync(e => e.Id == id);
+
+            if (especialidadeAtual == null)
+                return null;
+
+            especialidadeAtual.Nome = especialidade.Nome;
+
+            await _context.SaveChangesAsync();
+            
+            return especialidadeAtual;
+        }
+
+        // DELETE
+        public async Task<bool> ExcluirEspecialidade(int id)
+        {
+            var especialidade = await _context.Especialidades
+                                        .Where(e => e.Id == id)
+                                        .ExecuteDeleteAsync();
+
+            return especialidade > 0;
         }
     }
 }

@@ -7,5 +7,5 @@ public class Paciente
     public string Cpf { get; set; } = string.Empty;
 
     // Navegação
-    public Usuario Usuario { get; set; }
+    public Usuario? Usuario { get; set; }
 }

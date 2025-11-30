@@ -8,8 +8,8 @@ public class Medico
 
     // Especialidade
     public int EspecialidadeId { get; set; }
-    public Especialidade Especialidade { get; set; }
+    public Especialidade? Especialidade { get; set; }
 
     // Navegação
-    public Usuario Usuario { get; set; }
+    public Usuario? Usuario { get; set; }
 }
