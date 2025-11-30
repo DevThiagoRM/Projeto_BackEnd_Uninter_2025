@@ -26,38 +26,36 @@ namespace SistemaHospitalar_API.Application.Services
             _logger = logger;
         }
 
+        // ============================================================
+        // LOGIN
+        // ============================================================
         public async Task<LoginResponseDto> LoginAsync(LoginRequestDto dto)
         {
             _logger.LogInformation("Tentativa de login para o email: {Email}", dto.Email);
 
-            // Buscar usuário
             var user = await _userManager.FindByEmailAsync(dto.Email);
             if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password))
             {
-                _logger.LogWarning("Credenciais inválidas para o email: {Email}", dto.Email);
-                throw new UnauthorizedAccessException("Credenciais inválidas");
+                _logger.LogWarning("Credenciais inválidas para {Email}", dto.Email);
+                throw new UnauthorizedAccessException("Credenciais inválidas.");
             }
 
-            // Verificar se usuário está ativo
             if (!user.Status)
             {
                 _logger.LogWarning("Tentativa de login com usuário inativo: {Email}", dto.Email);
-                throw new UnauthorizedAccessException("Usuário inativo");
+                throw new UnauthorizedAccessException("Usuário inativo.");
             }
 
-            // Gerar tokens
+            var roles = await _userManager.GetRolesAsync(user);
+
             var token = await GenerateJwtToken(user);
             var refreshToken = GenerateRefreshToken();
 
-            // Salvar refresh token (simplificado - em produção, salve no banco)
             user.RefreshToken = refreshToken;
             user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
             await _userManager.UpdateAsync(user);
 
-            // Obter roles do usuário
-            var roles = await _userManager.GetRolesAsync(user);
-
-            _logger.LogInformation("Login realizado com sucesso para: {Email}", dto.Email);
+            _logger.LogInformation("Login bem-sucedido para {Email}", dto.Email);
 
             return new LoginResponseDto
             {
@@ -70,33 +68,39 @@ namespace SistemaHospitalar_API.Application.Services
             };
         }
 
-        public async Task<LoginResponseDto> RefreshTokenAsync(RefreshTokenDto refreshTokenDto)
+        // ============================================================
+        // REFRESH TOKEN
+        // ============================================================
+        public async Task<LoginResponseDto> RefreshTokenAsync(RefreshTokenDto dto)
         {
-            _logger.LogInformation("Tentativa de refresh token");
+            _logger.LogInformation("Tentativa de refresh token iniciada.");
 
-            var principal = GetPrincipalFromExpiredToken(refreshTokenDto.Token);
-            var userEmail = principal.FindFirst(ClaimTypes.Email)?.Value;
+            var principal = GetPrincipalFromExpiredToken(dto.Token);
+            var email = principal.FindFirstValue(ClaimTypes.Email);
 
-            if (string.IsNullOrEmpty(userEmail))
+            if (string.IsNullOrEmpty(email))
+                throw new SecurityTokenException("Token inválido.");
+
+            var user = await _userManager.FindByEmailAsync(email);
+
+            if (user == null ||
+                user.RefreshToken != dto.RefreshToken ||
+                user.RefreshTokenExpiry <= DateTime.UtcNow)
             {
-                throw new SecurityTokenException("Token inválido");
+                _logger.LogWarning("Refresh token inválido ou expirado para {Email}", email);
+                throw new SecurityTokenException("Refresh token inválido ou expirado.");
             }
 
-            var user = await _userManager.FindByEmailAsync(userEmail);
-            if (user == null || user.RefreshToken != refreshTokenDto.RefreshToken || user.RefreshTokenExpiry <= DateTime.UtcNow)
-            {
-                throw new SecurityTokenException("Refresh token inválido ou expirado");
-            }
-
-            // Gerar novos tokens
             var newToken = await GenerateJwtToken(user);
             var newRefreshToken = GenerateRefreshToken();
 
-            // Atualizar refresh token
             user.RefreshToken = newRefreshToken;
+            user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
             await _userManager.UpdateAsync(user);
 
             var roles = await _userManager.GetRolesAsync(user);
+
+            _logger.LogInformation("Refresh token renovado para {Email}", email);
 
             return new LoginResponseDto
             {
@@ -109,17 +113,33 @@ namespace SistemaHospitalar_API.Application.Services
             };
         }
 
+        // ============================================================
+        // REVOGAR TOKEN
+        // ============================================================
         public async Task<bool> RevokeTokenAsync(string email)
         {
+            _logger.LogInformation("Tentativa de revogação do refresh token para {Email}", email);
+
             var user = await _userManager.FindByEmailAsync(email);
-            if (user == null) return false;
+            if (user == null)
+            {
+                _logger.LogWarning("Usuário não encontrado para revogação: {Email}", email);
+                return false;
+            }
 
             user.RefreshToken = null;
+            user.RefreshTokenExpiry = null;
+
             await _userManager.UpdateAsync(user);
+
+            _logger.LogInformation("Refresh token revogado para {Email}", email);
 
             return true;
         }
 
+        // ============================================================
+        // MÉTODOS INTERNOS (AUXILIARES)
+        // ============================================================
         private async Task<string> GenerateJwtToken(Usuario user)
         {
             var claims = new List<Claim>
@@ -130,14 +150,14 @@ namespace SistemaHospitalar_API.Application.Services
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
-            // Adicionar roles como claims
             var roles = await _userManager.GetRolesAsync(user);
             foreach (var role in roles)
-            {
                 claims.Add(new Claim(ClaimTypes.Role, role));
-            }
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"]!));
+            var key = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"]!)
+            );
+
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
@@ -153,29 +173,34 @@ namespace SistemaHospitalar_API.Application.Services
 
         private string GenerateRefreshToken()
         {
-            var randomNumber = new byte[32];
+            var bytes = new byte[32];
             using var rng = RandomNumberGenerator.Create();
-            rng.GetBytes(randomNumber);
-            return Convert.ToBase64String(randomNumber);
+            rng.GetBytes(bytes);
+            return Convert.ToBase64String(bytes);
         }
 
         private ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
         {
-            var tokenValidationParameters = new TokenValidationParameters
+            var parameters = new TokenValidationParameters
             {
                 ValidateAudience = false,
                 ValidateIssuer = false,
+                ValidateLifetime = false,
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"]!)),
-                ValidateLifetime = false
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"]!)
+                )
             };
 
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out var securityToken);
+            var handler = new JwtSecurityTokenHandler();
 
-            if (securityToken is not JwtSecurityToken jwtSecurityToken ||
-                !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
-                throw new SecurityTokenException("Token inválido");
+            var principal = handler.ValidateToken(token, parameters, out var securityToken);
+
+            if (securityToken is not JwtSecurityToken jwt ||
+                !jwt.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new SecurityTokenException("Token inválido.");
+            }
 
             return principal;
         }

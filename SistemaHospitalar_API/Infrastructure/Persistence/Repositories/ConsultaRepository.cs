@@ -21,9 +21,9 @@ namespace SistemaHospitalar_API.Infrastructure.Persistence.Repositories
         {
             return await _context.Consultas
                 .Include(c => c.Paciente)
-                    .ThenInclude(p => p.Usuario)
+                    .ThenInclude(p => p!.Usuario)
                 .Include(c => c.Medico)
-                    .ThenInclude(m => m.Usuario)
+                    .ThenInclude(m => m!.Usuario)
                 .AsNoTracking()
                 .ToListAsync();
         }
@@ -35,9 +35,9 @@ namespace SistemaHospitalar_API.Infrastructure.Persistence.Repositories
         {
             return await _context.Consultas
                 .Include(c => c.Paciente)
-                    .ThenInclude(p => p.Usuario)
+                    .ThenInclude(p => p!.Usuario)
                 .Include(c => c.Medico)
-                    .ThenInclude(m => m.Usuario)
+                    .ThenInclude(m => m!.Usuario)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == id);
         }
@@ -49,9 +49,9 @@ namespace SistemaHospitalar_API.Infrastructure.Persistence.Repositories
         {
             return await _context.Consultas
                 .Include(c => c.Paciente)
-                    .ThenInclude(p => p.Usuario)
+                    .ThenInclude(p => p!.Usuario)
                 .Include(c => c.Medico)
-                    .ThenInclude(m => m.Usuario)
+                    .ThenInclude(m => m!.Usuario)
                 .Where(c => c.MedicoId == medicoId)
                 .AsNoTracking()
                 .ToListAsync();
@@ -64,9 +64,9 @@ namespace SistemaHospitalar_API.Infrastructure.Persistence.Repositories
         {
             return await _context.Consultas
                 .Include(c => c.Paciente)
-                    .ThenInclude(p => p.Usuario)
+                    .ThenInclude(p => p!.Usuario)
                 .Include(c => c.Medico)
-                    .ThenInclude(m => m.Usuario)
+                    .ThenInclude(m => m!.Usuario)
                 .Where(c => c.PacienteId == pacienteId)
                 .AsNoTracking()
                 .ToListAsync();
@@ -79,9 +79,9 @@ namespace SistemaHospitalar_API.Infrastructure.Persistence.Repositories
         {
             return await _context.Consultas
                 .Include(c => c.Paciente)
-                    .ThenInclude(p => p.Usuario)
+                    .ThenInclude(p => p!.Usuario)
                 .Include(c => c.Medico)
-                    .ThenInclude(m => m.Usuario)
+                    .ThenInclude(m => m!.Usuario)
                 .Where(c => c.Medico != null && c.Medico.Usuario != null &&
                             EF.Functions.Like(c.Medico.Usuario.NomeCompleto, $"%{medicoNome}%"))
                 .AsNoTracking()
@@ -95,9 +95,9 @@ namespace SistemaHospitalar_API.Infrastructure.Persistence.Repositories
         {
             return await _context.Consultas
                 .Include(c => c.Paciente)
-                    .ThenInclude(p => p.Usuario)
+                    .ThenInclude(p => p!.Usuario)
                 .Include(c => c.Medico)
-                    .ThenInclude(m => m.Usuario)
+                    .ThenInclude(m => m!.Usuario)
                 .Where(c => c.Paciente != null && c.Paciente.Usuario != null &&
                             EF.Functions.Like(c.Paciente.Usuario.NomeCompleto, $"%{pacienteNome}%"))
                 .AsNoTracking()

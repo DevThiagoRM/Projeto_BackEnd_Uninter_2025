@@ -14,25 +14,28 @@ namespace SistemaHospitalar_API.Application.Services
         private readonly UserManager<Usuario> _userManager;
         private readonly IMedicoService _medicoService;
         private readonly IPacienteService _pacienteService;
+        private readonly IEspecialidadeService _especialidadeService;
 
         public UsuarioService(
             ILogger<UsuarioService> logger,
             UserManager<Usuario> userManager,
             IMedicoService medicoService,
-            IPacienteService pacienteService)
+            IPacienteService pacienteService,
+            IEspecialidadeService especialidadeService)
         {
             _logger = logger;
             _userManager = userManager;
             _medicoService = medicoService;
             _pacienteService = pacienteService;
+            _especialidadeService = especialidadeService;
         }
 
-        // ============================================================================
+        // ======================
         // GET ALL
-        // ============================================================================
+        // ======================
         public async Task<IEnumerable<VisualizarUsuarioDto>> ObterUsuarios()
         {
-            _logger.LogInformation("Iniciando consulta de todos usuários.");
+            _logger.LogInformation("Iniciando consulta de todos os usuários.");
 
             var usuarios = await _userManager.Users
                 .AsNoTracking()
@@ -43,7 +46,7 @@ namespace SistemaHospitalar_API.Application.Services
 
             if (!usuarios.Any())
             {
-                _logger.LogWarning("Nenhum usuário encontrado.");
+                _logger.LogWarning("Nenhum usuário encontrado no banco.");
                 return Enumerable.Empty<VisualizarUsuarioDto>();
             }
 
@@ -63,17 +66,19 @@ namespace SistemaHospitalar_API.Application.Services
                 Paciente = u.Paciente == null ? null : new VisualizarPacienteDto
                 {
                     Cpf = u.Paciente.Cpf
-                }
+                },
+                IsMedico = u.Medico != null,
+                IsPaciente = u.Paciente != null
             });
 
-            _logger.LogInformation("Consulta concluída. Total retornado: {qtd}", resultado.Count());
+            _logger.LogInformation("Consulta concluída. Total de usuários retornados: {count}", resultado.Count());
 
             return resultado;
         }
 
-        // ============================================================================
+        // ======================
         // GET POR ID
-        // ============================================================================
+        // ======================
         public async Task<VisualizarUsuarioDto?> ObterUsuarioPorId(Guid id)
         {
             _logger.LogInformation("Consultando usuário pelo ID: {id}", id);
@@ -91,13 +96,15 @@ namespace SistemaHospitalar_API.Application.Services
                 return null;
             }
 
+            _logger.LogInformation("Usuário encontrado. ID: {id}, Email: {email}", usuario.Id, usuario.Email);
+
             return new VisualizarUsuarioDto
             {
                 Id = usuario.Id,
                 NomeCompleto = usuario.NomeCompleto,
                 NomeExibicao = usuario.NomeExibicao,
                 DataNascimento = usuario.DataNascimento,
-                Email = usuario.Email!,
+                Email = usuario.Email ?? "",
                 PhoneNumber = usuario.PhoneNumber,
                 Medico = usuario.Medico == null ? null : new VisualizarMedicoDto
                 {
@@ -107,20 +114,23 @@ namespace SistemaHospitalar_API.Application.Services
                 Paciente = usuario.Paciente == null ? null : new VisualizarPacienteDto
                 {
                     Cpf = usuario.Paciente.Cpf
-                }
+                },
+                IsMedico = usuario.Medico != null,
+                IsPaciente = usuario.Paciente != null
             };
         }
 
-        // ============================================================================
+        // ======================
         // GET POR EMAIL
-        // ============================================================================
+        // ======================
         public async Task<VisualizarUsuarioDto?> ObterUsuarioPorEmail(string email)
         {
-            _logger.LogInformation("Consultando usuário por email: {email}", email);
+            _logger.LogInformation("Consultando usuário pelo email: {email}", email);
 
             var usuario = await _userManager.Users
                 .AsNoTracking()
                 .Include(u => u.Medico)
+                    .ThenInclude(m => m!.Especialidade)
                 .Include(u => u.Paciente)
                 .FirstOrDefaultAsync(u => u.Email == email);
 
@@ -130,29 +140,55 @@ namespace SistemaHospitalar_API.Application.Services
                 return null;
             }
 
+            _logger.LogInformation("Usuário encontrado. ID: {id}, Email: {email}", usuario.Id, usuario.Email);
+
             return new VisualizarUsuarioDto
             {
                 Id = usuario.Id,
                 NomeCompleto = usuario.NomeCompleto,
                 NomeExibicao = usuario.NomeExibicao,
                 DataNascimento = usuario.DataNascimento,
-                Email = usuario.Email!,
-                PhoneNumber = usuario.PhoneNumber
+                Email = usuario.Email ?? "",
+                PhoneNumber = usuario.PhoneNumber,
+                Medico = usuario.Medico == null ? null : new VisualizarMedicoDto
+                {
+                    CRM = usuario.Medico.CRM,
+                    Especialidade = usuario.Medico.Especialidade?.Nome ?? ""
+                },
+                Paciente = usuario.Paciente == null ? null : new VisualizarPacienteDto
+                {
+                    Cpf = usuario.Paciente.Cpf
+                },
+                IsMedico = usuario.Medico != null,
+                IsPaciente = usuario.Paciente != null
             };
         }
 
-        // ============================================================================
+        // ======================
         // CREATE
-        // ============================================================================
+        // ======================
         public async Task<VisualizarUsuarioDto> CriarUsuario(CriarUsuarioDto dto)
         {
-            _logger.LogInformation("Iniciando criação de usuário.");
+            _logger.LogInformation("Iniciando criação de usuário. Email: {email}", dto.Email);
 
-            var emailJaExiste = await _userManager.FindByEmailAsync(dto.Email);
-            if (emailJaExiste != null)
+            if (await _userManager.FindByEmailAsync(dto.Email) != null)
             {
-                _logger.LogWarning("Erro ao criar: email já está sendo usado: {email}", dto.Email);
+                _logger.LogWarning("Erro ao criar: email já está em uso: {email}", dto.Email);
                 throw new ArgumentException($"Usuário com o email {dto.Email} já existe.");
+            }
+
+            if (dto.IsPaciente && dto.Paciente != null)
+            {
+                if (string.IsNullOrWhiteSpace(dto.Paciente.Cpf))
+                {
+                    _logger.LogWarning("CPF do paciente não informado.");
+                    throw new ArgumentException("CPF é obrigatório.");
+                }
+                if (!ValidarCPF(dto.Paciente.Cpf))
+                {
+                    _logger.LogWarning("CPF inválido informado: {cpf}", dto.Paciente.Cpf);
+                    throw new ArgumentException("CPF inválido.");
+                }
             }
 
             var novoUsuario = new Usuario
@@ -172,56 +208,74 @@ namespace SistemaHospitalar_API.Application.Services
                 throw new Exception("Erro ao criar usuário");
             }
 
-            _logger.LogInformation("Usuário criado com sucesso. ID: {id}", novoUsuario.Id);
+            _logger.LogInformation("Usuário criado com sucesso. ID: {id}, Email: {email}", novoUsuario.Id, novoUsuario.Email);
 
-            if (dto.IsMedico == true)
+            if (dto.IsMedico && dto.Medico != null)
             {
-                if (dto.Medico != null)
-                {
-                    var medicoCriado = await _medicoService.CriarMedico(novoUsuario.Id, dto.Medico);
+                _logger.LogInformation("Criando médico para o usuário ID: {id}", novoUsuario.Id);
 
-                    if (medicoCriado == null)
-                    {
-                        _logger.LogError("Falha ao criar o médico para o usuário ID: {id}", novoUsuario.Id);
-                        throw new Exception("Erro ao criar médico.");
-                    }
-                    else
-                    {
-                        _logger.LogInformation("Médico criado com sucesso para o usuário ID: {id}", novoUsuario.Id);
-                    }
+                if (string.IsNullOrWhiteSpace(dto.Medico.CRM))
+                {
+                    _logger.LogWarning("CRM do médico não informado.");
+                    throw new ArgumentException("CRM do médico é obrigatório.");
                 }
+
+                var especialidade = await _especialidadeService.ObterEspecialidadePorId(dto.Medico.EspecialidadeId);
+                if (especialidade == null)
+                {
+                    _logger.LogWarning("Especialidade inválida para ID: {id}", dto.Medico.EspecialidadeId);
+                    throw new ArgumentException("Especialidade inválida.");
+                }
+
+                var medicoCriado = await _medicoService.CriarMedico(novoUsuario.Id, dto.Medico);
+                if (medicoCriado == null)
+                {
+                    _logger.LogError("Erro ao criar médico para o usuário ID: {id}", novoUsuario.Id);
+                    throw new Exception("Erro ao criar médico.");
+                }
+
+                _logger.LogInformation("Médico criado com sucesso para o usuário ID: {id}", novoUsuario.Id);
             }
 
-            if (dto.IsPaciente == true)
+            if (dto.IsPaciente && dto.Paciente != null)
             {
-                if (dto.Paciente != null)
-                {
-                    var pacienteCriado = await _pacienteService.CriarPaciente(novoUsuario.Id, dto.Paciente);
+                _logger.LogInformation("Criando paciente para o usuário ID: {id}", novoUsuario.Id);
 
-                    if (pacienteCriado == null)
-                    {
-                        _logger.LogError("Falha ao criar o paciente para o usuário ID: {id}", novoUsuario.Id);
-                        throw new Exception("Erro ao criar paciente.");
-                    }
-                    else
-                    {
-                        _logger.LogInformation("Paciente criado com sucesso para o usuário ID: {id}", novoUsuario.Id);
-                    }
+                var pacienteCriado = await _pacienteService.CriarPaciente(novoUsuario.Id, dto.Paciente);
+                if (pacienteCriado == null)
+                {
+                    _logger.LogError("Erro ao criar paciente para o usuário ID: {id}", novoUsuario.Id);
+                    throw new Exception("Erro ao criar paciente.");
                 }
+
+                _logger.LogInformation("Paciente criado com sucesso para o usuário ID: {id}", novoUsuario.Id);
             }
 
-            // ======= Retorno =======
             return new VisualizarUsuarioDto
             {
                 Id = novoUsuario.Id,
                 NomeCompleto = novoUsuario.NomeCompleto,
                 NomeExibicao = novoUsuario.NomeExibicao,
                 DataNascimento = novoUsuario.DataNascimento,
-                Email = novoUsuario.Email!,
-                PhoneNumber = novoUsuario.PhoneNumber
+                Email = novoUsuario.Email ?? "",
+                PhoneNumber = novoUsuario.PhoneNumber,
+                Medico = dto.IsMedico && dto.Medico != null ? new VisualizarMedicoDto
+                {
+                    CRM = dto.Medico.CRM,
+                    Especialidade = (await _especialidadeService.ObterEspecialidadePorId(dto.Medico.EspecialidadeId))?.Nome ?? ""
+                } : null,
+                Paciente = dto.IsPaciente && dto.Paciente != null ? new VisualizarPacienteDto
+                {
+                    Cpf = dto.Paciente.Cpf
+                } : null,
+                IsMedico = dto.IsMedico,
+                IsPaciente = dto.IsPaciente
             };
         }
 
+        // ======================
+        // EDIT
+        // ======================
         public async Task<VisualizarUsuarioDto?> EditarUsuario(Guid id, EditarUsuarioDto dto)
         {
             _logger.LogInformation("Iniciando edição do usuário ID: {id}", id);
@@ -229,13 +283,13 @@ namespace SistemaHospitalar_API.Application.Services
             var usuarioAtual = await _userManager.FindByIdAsync(id.ToString());
             if (usuarioAtual == null)
             {
-                _logger.LogWarning("Usuário não encontrado para edição. ID: {id}", id);
+                _logger.LogWarning("Nenhum usuário encontrado para atualização. ID: {id}", id);
                 throw new ArgumentException($"Nenhum usuário encontrado com id: {id}");
             }
 
-            _logger.LogDebug("Atualizando dados do usuário ID: {id}", id);
+            _logger.LogDebug("Valores atuais: NomeCompleto={nome}, NomeExibicao={exibicao}, Email={email}",
+                usuarioAtual.NomeCompleto, usuarioAtual.NomeExibicao, usuarioAtual.Email);
 
-            // ======= Atualiza dados do usuário =======
             usuarioAtual.NomeCompleto = dto.NomeCompleto ?? usuarioAtual.NomeCompleto;
             usuarioAtual.NomeExibicao = dto.NomeExibicao ?? usuarioAtual.NomeExibicao;
             usuarioAtual.DataNascimento = dto.DataNascimento ?? usuarioAtual.DataNascimento;
@@ -246,27 +300,20 @@ namespace SistemaHospitalar_API.Application.Services
             var result = await _userManager.UpdateAsync(usuarioAtual);
             if (!result.Succeeded)
             {
-                _logger.LogError("Erro ao atualizar usuário ID: {id}. Erros: {erros}",
-                    id, string.Join(", ", result.Errors.Select(e => e.Description)));
+                _logger.LogError("Falha ao atualizar usuário ID: {id}. Erros: {erros}", id, string.Join(", ", result.Errors.Select(e => e.Description)));
                 throw new Exception("Erro ao atualizar usuário.");
             }
 
-            if (dto.IsMedico == true)
+            if (dto.IsMedico && dto.Medico != null)
             {
-                if (dto.Medico != null)
-                {
-                    await _medicoService.EditarMedico(id, dto.Medico);
-                    _logger.LogInformation("Médico atualizado com sucesso. ID: {id}", id);
-                }
+                _logger.LogInformation("Editando dados de médico para usuário ID: {id}", id);
+                await _medicoService.EditarMedico(id, dto.Medico);
             }
 
-            if (dto.IsPaciente == true)
+            if (dto.IsPaciente && dto.Paciente != null)
             {
-                if (dto.Paciente != null)
-                {
-                    await _pacienteService.EditarPaciente(id, dto.Paciente);
-                    _logger.LogInformation("Paciente atualizado com sucesso. ID: {id}", id);
-                }
+                _logger.LogInformation("Editando dados de paciente para usuário ID: {id}", id);
+                await _pacienteService.EditarPaciente(id, dto.Paciente);
             }
 
             _logger.LogInformation("Usuário atualizado com sucesso. ID: {id}", id);
@@ -277,90 +324,96 @@ namespace SistemaHospitalar_API.Application.Services
                 NomeCompleto = usuarioAtual.NomeCompleto,
                 NomeExibicao = usuarioAtual.NomeExibicao,
                 DataNascimento = usuarioAtual.DataNascimento,
-                Email = usuarioAtual.Email!,
-                PhoneNumber = usuarioAtual.PhoneNumber
+                Email = usuarioAtual.Email ?? "",
+                PhoneNumber = usuarioAtual.PhoneNumber,
+                Medico = dto.IsMedico && dto.Medico != null ? new VisualizarMedicoDto
+                {
+                    CRM = dto.Medico.CRM,
+                    Especialidade = (await _especialidadeService.ObterEspecialidadePorId(dto.Medico.EspecialidadeId))?.Nome ?? ""
+                } : null,
+                Paciente = dto.IsPaciente && dto.Paciente != null ? new VisualizarPacienteDto
+                {
+                    Cpf = dto.Paciente.Cpf
+                } : null,
+                IsMedico = dto.IsMedico,
+                IsPaciente = dto.IsPaciente
             };
         }
 
+        // ======================
+        // ALTERAR SENHA
+        // ======================
         public async Task<bool> AlterarSenha(string email, AlterarSenhaDto dto)
         {
-            _logger.LogInformation("Iniciando alteração de senha para usuário: {email}", email);
+            _logger.LogInformation("Iniciando alteração de senha para email: {email}", email);
 
             var usuario = await _userManager.FindByEmailAsync(email);
             if (usuario == null)
             {
-                _logger.LogWarning("Usuário não encontrado para alteração de senha: {email}", email);
+                _logger.LogWarning("Usuário não encontrado para email: {email}", email);
                 return false;
             }
 
-            // Gerar token de alteração de senha
             var resetToken = await _userManager.GeneratePasswordResetTokenAsync(usuario);
-
-            // Alterar a senha usando o token
             var result = await _userManager.ResetPasswordAsync(usuario, resetToken, dto.NovaSenha);
 
             if (!result.Succeeded)
             {
-                _logger.LogError("Falha ao alterar senha para {email}. Erros: {erros}",
-                    email, string.Join(", ", result.Errors.Select(e => e.Description)));
+                _logger.LogError("Falha ao alterar senha para usuário ID: {id}. Erros: {erros}", usuario.Id,
+                    string.Join(", ", result.Errors.Select(e => e.Description)));
                 return false;
             }
 
-            _logger.LogInformation("Senha alterada com sucesso para {email}", email);
+            _logger.LogInformation("Senha alterada com sucesso para usuário ID: {id}", usuario.Id);
             return true;
         }
 
-
-        // ============================================================================
-        // DELETE
-        // ============================================================================
+        // ======================
+        // DELETE (soft)
+        // ======================
         public async Task<bool> ExcluirUsuario(Guid id)
         {
-            _logger.LogInformation("Tentando realizar soft delete do usuário ID: {id}", id);
+            _logger.LogInformation("Iniciando exclusão do usuário ID: {id}", id);
 
             var usuario = await _userManager.FindByIdAsync(id.ToString());
-
             if (usuario == null)
             {
-                _logger.LogWarning("Soft delete cancelado. Usuário não encontrado. ID: {id}", id);
+                _logger.LogWarning("Usuário não encontrado para exclusão. ID: {id}", id);
                 return false;
             }
 
             usuario.Status = false;
-
             var result = await _userManager.UpdateAsync(usuario);
-
-            if (result.Succeeded)
-            {
-                var tipoUsuario = await ObterUsuarioPorId(id);
-
-                if (tipoUsuario!.IsMedico == true)
-                {
-                    await _medicoService.ExcluirMedico(id);
-                    _logger.LogInformation("Médico excluído com sucesso. ID: {id}", id);
-                }
-
-                if (tipoUsuario.IsPaciente == true)
-                {
-                    await _pacienteService.ExcluirPaciente(id);
-                    _logger.LogInformation("Paciente excluído com sucesso. ID: {id}", id);
-                }
-            }
 
             if (!result.Succeeded)
             {
-                _logger.LogError(
-                    "Falha ao realizar soft delete do usuário ID: {id}. Erros: {erros}",
-                    id,
-                    string.Join(", ", result.Errors.Select(e => e.Description))
-                );
-
+                _logger.LogError("Falha ao excluir usuário ID: {id}. Erros: {erros}", id,
+                    string.Join(", ", result.Errors.Select(e => e.Description)));
                 return false;
             }
 
-            _logger.LogInformation("Soft delete realizado com sucesso. ID: {id}", id);
+            var tipoUsuario = await ObterUsuarioPorId(id);
 
+            if (tipoUsuario?.IsMedico == true)
+            {
+                _logger.LogInformation("Excluindo dados de médico para usuário ID: {id}", id);
+                await _medicoService.ExcluirMedico(id);
+            }
+
+            if (tipoUsuario?.IsPaciente == true)
+            {
+                _logger.LogInformation("Excluindo dados de paciente para usuário ID: {id}", id);
+                await _pacienteService.ExcluirPaciente(id);
+            }
+
+            _logger.LogInformation("Usuário excluído com sucesso (soft delete). ID: {id}", id);
             return true;
+        }
+
+        private bool ValidarCPF(string cpf)
+        {
+            cpf = new string(cpf.Where(char.IsDigit).ToArray());
+            return cpf.Length == 11;
         }
     }
 }

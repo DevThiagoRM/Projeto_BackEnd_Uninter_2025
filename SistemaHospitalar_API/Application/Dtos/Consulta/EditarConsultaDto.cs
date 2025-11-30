@@ -12,5 +12,7 @@ namespace SistemaHospitalar_API.Application.Dtos.Consulta
 
         [Required]
         public DateTime HorarioConsulta { get; set; }
+
+        public string Observacao { get; set; } = string.Empty;
     }
 }
