@@ -5,7 +5,7 @@
         // Dados Consulta
         public Guid Id { get; set; }
 
-        public Usuario Usuario { get; set; }
+        public Paciente Paciente { get; set; }
         public Guid PacienteId { get; set; }
 
         public Medico Medico { get; set; }
