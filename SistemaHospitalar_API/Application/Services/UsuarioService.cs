@@ -31,7 +31,7 @@ namespace SistemaHospitalar_API.Application.Services
             var usuarios = await _userManager.Users
                 .AsNoTracking()
                 .Include(u => u.Medico)
-                    .ThenInclude(m => m.Especialidade)
+                    .ThenInclude(m => m!.Especialidade)
                 .Include(u => u.Paciente)
                 .ToListAsync();
 
@@ -75,7 +75,7 @@ namespace SistemaHospitalar_API.Application.Services
             var usuario = await _userManager.Users
                 .AsNoTracking()
                 .Include(u => u.Medico)
-                    .ThenInclude(m => m.Especialidade)
+                    .ThenInclude(m => m!.Especialidade)
                 .Include(u => u.Paciente)
                 .FirstOrDefaultAsync(u => u.Id == id);
 
