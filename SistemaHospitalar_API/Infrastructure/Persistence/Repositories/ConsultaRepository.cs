@@ -1,43 +1,159 @@
-﻿using SistemaHospitalar_API.Application.Constructors.Repositories;
+﻿using Microsoft.EntityFrameworkCore;
+using SistemaHospitalar_API.Application.Constructors.Repositories;
 using SistemaHospitalar_API.Domain.Entities;
+using SistemaHospitalar_API.Infrastructure.Data;
 
 namespace SistemaHospitalar_API.Infrastructure.Persistence.Repositories
 {
     public class ConsultaRepository : IConsultaRepository
     {
-        public Task<Consulta> CriarConsulta(Consulta consulta)
+        private readonly AppDbContext _context;
+
+        public ConsultaRepository(AppDbContext context)
         {
-            throw new NotImplementedException();
+            _context = context;
         }
 
-        public Task<Consulta?> EditarConsulta(Guid id, Consulta consulta)
+        // ============================================================================
+        // GET ALL
+        // ============================================================================
+        public async Task<IEnumerable<Consulta>> ObterConsultas()
         {
-            throw new NotImplementedException();
+            return await _context.Consultas
+                .Include(c => c.Paciente)
+                    .ThenInclude(p => p.Usuario)
+                .Include(c => c.Medico)
+                    .ThenInclude(m => m.Usuario)
+                .AsNoTracking()
+                .ToListAsync();
         }
 
-        public Task<bool> ExcluirConsulta(Guid id)
+        // ============================================================================
+        // GET BY ID
+        // ============================================================================
+        public async Task<Consulta?> ObterConsultasPorId(Guid id)
         {
-            throw new NotImplementedException();
+            return await _context.Consultas
+                .Include(c => c.Paciente)
+                    .ThenInclude(p => p.Usuario)
+                .Include(c => c.Medico)
+                    .ThenInclude(m => m.Usuario)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == id);
         }
 
-        public Task<IEnumerable<Consulta>> ObterConsultas()
+        // ============================================================================
+        // GET BY MEDICO ID
+        // ============================================================================
+        public async Task<List<Consulta>> ObterConsultasPorMedicoId(Guid medicoId)
         {
-            throw new NotImplementedException();
+            return await _context.Consultas
+                .Include(c => c.Paciente)
+                    .ThenInclude(p => p.Usuario)
+                .Include(c => c.Medico)
+                    .ThenInclude(m => m.Usuario)
+                .Where(c => c.MedicoId == medicoId)
+                .AsNoTracking()
+                .ToListAsync();
         }
 
-        public Task<Consulta?> ObterConsultasPorId(Guid id)
+        // ============================================================================
+        // GET BY PACIENTE ID
+        // ============================================================================
+        public async Task<List<Consulta>> ObterConsultasPorPacienteId(Guid pacienteId)
         {
-            throw new NotImplementedException();
+            return await _context.Consultas
+                .Include(c => c.Paciente)
+                    .ThenInclude(p => p.Usuario)
+                .Include(c => c.Medico)
+                    .ThenInclude(m => m.Usuario)
+                .Where(c => c.PacienteId == pacienteId)
+                .AsNoTracking()
+                .ToListAsync();
         }
 
-        public Task<List<Consulta>> ObterConsultasPorMedicoId(Guid medicoId)
+        // ============================================================================
+        // GET BY MEDICO NOME
+        // ============================================================================
+        public async Task<List<Consulta>> ObterConsultasPorMedicoNome(string medicoNome)
         {
-            throw new NotImplementedException();
+            return await _context.Consultas
+                .Include(c => c.Paciente)
+                    .ThenInclude(p => p.Usuario)
+                .Include(c => c.Medico)
+                    .ThenInclude(m => m.Usuario)
+                .Where(c => c.Medico != null && c.Medico.Usuario != null &&
+                            EF.Functions.Like(c.Medico.Usuario.NomeCompleto, $"%{medicoNome}%"))
+                .AsNoTracking()
+                .ToListAsync();
         }
 
-        public Task<List<Consulta>> ObterConsultasPorPacienteId(Guid pacienteId)
+        // ============================================================================
+        // GET BY PACIENTE NOME
+        // ============================================================================
+        public async Task<List<Consulta>> ObterConsultasPorPacienteNome(string pacienteNome)
         {
-            throw new NotImplementedException();
+            return await _context.Consultas
+                .Include(c => c.Paciente)
+                    .ThenInclude(p => p.Usuario)
+                .Include(c => c.Medico)
+                    .ThenInclude(m => m.Usuario)
+                .Where(c => c.Paciente != null && c.Paciente.Usuario != null &&
+                            EF.Functions.Like(c.Paciente.Usuario.NomeCompleto, $"%{pacienteNome}%"))
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        // ============================================================================
+        // POST
+        // ============================================================================
+        public async Task<Consulta> CriarConsulta(Consulta consulta)
+        {
+            await _context.Consultas.AddAsync(consulta);
+            await _context.SaveChangesAsync();
+            return consulta;
+        }
+
+        // ============================================================================
+        // PUT
+        // ============================================================================
+        public async Task<Consulta?> EditarConsulta(Guid id, Consulta consulta)
+        {
+            var consultaAtual = await _context.Consultas
+                .AsTracking()
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (consultaAtual == null)
+                return null;
+
+            consultaAtual.PacienteId = consulta.PacienteId;
+            consultaAtual.MedicoId = consulta.MedicoId;
+            consultaAtual.HorarioConsulta = consulta.HorarioConsulta;
+            consultaAtual.Observacao = consulta.Observacao;
+            consultaAtual.Status = consulta.Status;
+
+            await _context.SaveChangesAsync();
+            return consultaAtual;
+        }
+
+        // ============================================================================
+        // CANCELAR CONSULTA (DELETE LÓGICO)
+        // ============================================================================
+        public async Task<bool> CancelarConsulta(Guid id, string motivo)
+        {
+            var consulta = await _context.Consultas
+                .AsTracking()
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (consulta == null)
+                return false;
+
+            // Salvar o motivo no campo Observacao e desativar
+            consulta.Observacao = motivo;
+            consulta.Status = false;
+
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 }

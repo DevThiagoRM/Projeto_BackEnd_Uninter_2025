@@ -19,17 +19,21 @@ namespace SistemaHospitalar_API.Controllers
             _logger = logger;
         }
 
-        // GET: api/especialidades
+        // ============================================================================
+        // GET ALL
+        // ============================================================================
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<ActionResult<IEnumerable<VisualizarEspecialidadeDto>>> ObterEspecialidades()
         {
             var especialidades = await _service.ObterEspecialidades();
             return Ok(especialidades);
         }
 
-        // GET: api/especialidades/5
+        // ============================================================================
+        // GET BY ID
+        // ============================================================================
         [HttpGet("{id:int}")]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<ActionResult<VisualizarEspecialidadeDto?>> ObterEspecialidadePorId(int id)
         {
             var especialidade = await _service.ObterEspecialidadePorId(id);
 
@@ -39,9 +43,11 @@ namespace SistemaHospitalar_API.Controllers
             return Ok(especialidade);
         }
 
-        // POST: api/especialidades
+        // ============================================================================
+        // POST
+        // ============================================================================
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CriarEspecialidadeDto dto)
+        public async Task<ActionResult<VisualizarEspecialidadeDto>> CriarEspecialidade([FromBody] CriarEspecialidadeDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -49,7 +55,7 @@ namespace SistemaHospitalar_API.Controllers
             try
             {
                 var nova = await _service.CriarEspecialidade(dto);
-                return CreatedAtAction(nameof(GetById), new { id = nova.Id }, nova);
+                return CreatedAtAction(nameof(ObterEspecialidadePorId), new { id = nova.Id }, nova);
             }
             catch (ArgumentException ex)
             {
@@ -58,9 +64,11 @@ namespace SistemaHospitalar_API.Controllers
             }
         }
 
-        // PUT: api/especialidades/5
+        // ============================================================================
+        // PUT
+        // ============================================================================
         [HttpPut("{id:int}")]
-        public async Task<IActionResult> Update(int id, [FromBody] EditarEspecialidadeDto dto)
+        public async Task<ActionResult<VisualizarEspecialidadeDto?>> EditarEspecialidade(int id, [FromBody] EditarEspecialidadeDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -68,18 +76,23 @@ namespace SistemaHospitalar_API.Controllers
             try
             {
                 var atualizada = await _service.EditarEspecialidade(id, dto);
+                if (atualizada == null)
+                    return NotFound(new { message = "Especialidade não encontrada." });
+
                 return Ok(atualizada);
             }
             catch (ArgumentException ex)
             {
                 _logger.LogWarning(ex, "Erro ao atualizar especialidade.");
-                return NotFound(new { message = ex.Message });
+                return BadRequest(new { message = ex.Message });
             }
         }
 
-        // DELETE: api/especialidades/5
+        // ============================================================================
+        // DELETE
+        // ============================================================================
         [HttpDelete("{id:int}")]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<ActionResult> ExcluirEspecialidade(int id)
         {
             var excluiu = await _service.ExcluirEspecialidade(id);
 

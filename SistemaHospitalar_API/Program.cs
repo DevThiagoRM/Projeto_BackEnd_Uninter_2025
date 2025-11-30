@@ -40,6 +40,7 @@ builder.Services.AddControllers();
 // Repositories
 //=======================================================
 builder.Services.AddScoped<IEspecialidadeRepository, EspecialidadeRepository>();
+builder.Services.AddScoped<IConsultaRepository, ConsultaRepository>();
 
 
 //=======================================================
@@ -47,6 +48,7 @@ builder.Services.AddScoped<IEspecialidadeRepository, EspecialidadeRepository>();
 //=======================================================
 builder.Services.AddScoped<IEspecialidadeService, EspecialidadeService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+builder.Services.AddScoped<IConsultaService, ConsultaService>();
 
 //=======================================================
 // Swagger

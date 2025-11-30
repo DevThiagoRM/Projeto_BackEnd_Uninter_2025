@@ -12,5 +12,8 @@
         public Guid MedicoId { get; set; }
 
         public DateTime HorarioConsulta { get; set; }
+
+        public string? Observacao { get; set; }
+        public bool Status { get; set; }
     }
 }
