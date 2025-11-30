@@ -7,6 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.22" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.22" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.22">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.22" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.22">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
@@ -16,11 +27,8 @@
     <Folder Include="Application\Constructors\Services\" />
     <Folder Include="Application\Services\" />
     <Folder Include="Application\Dtos\" />
-    <Folder Include="Domain\Entities\" />
-    <Folder Include="Infrastructure\Data\" />
     <Folder Include="Infrastructure\Persistence\Repositories\" />
     <Folder Include="Infrastructure\Persistence\" />
-    <Folder Include="Domain\" />
     <Folder Include="Controllers\" />
   </ItemGroup>
 
