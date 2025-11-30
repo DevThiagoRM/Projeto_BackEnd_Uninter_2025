@@ -14,7 +14,9 @@ namespace SistemaHospitalar_API.Infrastructure.Persistence.Repositories
             _context = context;
         }
 
-        // GET
+        // ============================================================================
+        // GET ALL
+        // ============================================================================
         public async Task<IEnumerable<Especialidade>> ObterEspecialidades()
         {
             return await _context.Especialidades
@@ -22,6 +24,9 @@ namespace SistemaHospitalar_API.Infrastructure.Persistence.Repositories
                 .ToListAsync();
         }
 
+        // ============================================================================
+        // GET BY ID
+        // ============================================================================
         public async Task<Especialidade?> ObterEspecialidadePorId(int id)
         {
             return await _context.Especialidades
@@ -29,6 +34,9 @@ namespace SistemaHospitalar_API.Infrastructure.Persistence.Repositories
                 .FirstOrDefaultAsync(e => e.Id == id);
         }
 
+        // ============================================================================
+        // GET BY NOME
+        // ============================================================================
         public async Task<Especialidade?> ObterEspecialidadePorNome(string nome)
         {
             return await _context.Especialidades
@@ -36,7 +44,9 @@ namespace SistemaHospitalar_API.Infrastructure.Persistence.Repositories
                 .FirstOrDefaultAsync(e => e.Nome == nome);
         }
 
+        // ============================================================================
         // POST
+        // ============================================================================
         public async Task<Especialidade> CriarEspecialidade(Especialidade especialidade)
         {
             await _context.Especialidades.AddAsync(especialidade);
@@ -44,7 +54,9 @@ namespace SistemaHospitalar_API.Infrastructure.Persistence.Repositories
             return especialidade;
         }
 
+        // ============================================================================
         // PUT
+        // ============================================================================
         public async Task<Especialidade?> EditarEspecialidade(int id, Especialidade especialidade)
         {
             var especialidadeAtual = await _context.Especialidades
@@ -61,7 +73,9 @@ namespace SistemaHospitalar_API.Infrastructure.Persistence.Repositories
             return especialidadeAtual;
         }
 
+        // ============================================================================
         // DELETE
+        // ============================================================================
         public async Task<bool> ExcluirEspecialidade(int id)
         {
             var especialidade = await _context.Especialidades

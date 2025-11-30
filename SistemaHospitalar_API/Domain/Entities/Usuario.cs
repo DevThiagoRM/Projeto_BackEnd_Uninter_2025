@@ -14,16 +14,6 @@ namespace SistemaHospitalar_API.Domain.Entities
         public Medico? Medico { get; set; }
         public Paciente? Paciente { get; set; }
 
-        // Auditoria Usuário
-        public DateTime CriadoEm { get; set; }
-        public Guid CriadoPorId { get; set; }
-
-        public DateTime? UltimaAlteracao { get; set; }
-        public Guid AlteradoPorId { get; set; }
-
-        public DateTime? ExcluidoEm { get; set; }
-        public Guid ExcluidoPorId { get; set; }
-
         public bool Status { get; set; }
 
     }

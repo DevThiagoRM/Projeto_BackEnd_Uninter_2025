@@ -18,7 +18,9 @@ namespace SistemaHospitalar_API.Application.Services
             _repo = repo;
         }
 
+        // ============================================================================
         // GET ALL
+        // ============================================================================
         public async Task<IEnumerable<VisualizarEspecialidadeDto>> ObterEspecialidades()
         {
             _logger.LogInformation("Iniciando consulta de todas as especialidades.");
@@ -42,7 +44,9 @@ namespace SistemaHospitalar_API.Application.Services
             return resultado;
         }
 
+        // ============================================================================
         // GET BY ID
+        // ============================================================================
         public async Task<VisualizarEspecialidadeDto?> ObterEspecialidadePorId(int id)
         {
             _logger.LogInformation("Consultando especialidade com id: {id}", id);
@@ -62,7 +66,9 @@ namespace SistemaHospitalar_API.Application.Services
             };
         }
 
+        // ============================================================================
         // POST
+        // ============================================================================
         public async Task<VisualizarEspecialidadeDto> CriarEspecialidade(CriarEspecialidadeDto dto)
         {
             _logger.LogInformation("Iniciando criação de especialidade. Nome: {nome}", dto.Nome);
@@ -91,7 +97,9 @@ namespace SistemaHospitalar_API.Application.Services
             };
         }
 
+        // ============================================================================
         // PUT
+        // ============================================================================
         public async Task<VisualizarEspecialidadeDto?> EditarEspecialidade(int id, EditarEspecialidadeDto dto)
         {
             _logger.LogInformation("Iniciando atualização da especialidade com ID: {id}", id);
@@ -119,7 +127,9 @@ namespace SistemaHospitalar_API.Application.Services
             };
         }
 
+        // ============================================================================
         // DELETE
+        // ============================================================================
         public async Task<bool> ExcluirEspecialidade(int id)
         {
             _logger.LogInformation("Tentando excluir especialidade com ID: {id}", id);

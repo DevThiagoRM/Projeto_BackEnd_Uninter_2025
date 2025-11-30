@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SistemaHospitalar_API.Application.Constructors.Repositories;
 using SistemaHospitalar_API.Application.Constructors.Services;
 using SistemaHospitalar_API.Application.Services;
+using SistemaHospitalar_API.Domain.Entities;
 using SistemaHospitalar_API.Infrastructure.Data;
 using SistemaHospitalar_API.Infrastructure.Persistence.Repositories;
 
@@ -14,6 +16,20 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("ApiConnectionString"));
 });
+
+//=======================================================
+// Identity
+//=======================================================
+builder.Services
+    .AddIdentity<Usuario, IdentityRole<Guid>>(options =>
+    {
+        options.Password.RequireDigit = true;
+        options.Password.RequireUppercase = true;
+        options.Password.RequiredLength = 8;
+        options.Password.RequireNonAlphanumeric = true;
+    })
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
 
 //=======================================================
 // Controllers
@@ -30,6 +46,7 @@ builder.Services.AddScoped<IEspecialidadeRepository, EspecialidadeRepository>();
 // Services
 //=======================================================
 builder.Services.AddScoped<IEspecialidadeService, EspecialidadeService>();
+builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 
 //=======================================================
 // Swagger
