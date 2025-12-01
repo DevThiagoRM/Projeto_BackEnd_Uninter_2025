@@ -19,5 +19,6 @@ namespace SistemaHospitalar_API.Application.Dtos.Usuario
 
         public bool IsMedico { get; set; }
         public bool IsPaciente { get; set; }
+        public bool Status { get; set; }
     }
 }

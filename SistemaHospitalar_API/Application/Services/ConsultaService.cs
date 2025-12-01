@@ -9,13 +9,16 @@ namespace SistemaHospitalar_API.Application.Services
     {
         private readonly ILogger<ConsultaService> _logger;
         private readonly IConsultaRepository _repo;
+        private readonly IUsuarioService _usuarioService;
 
         public ConsultaService(
             ILogger<ConsultaService> logger,
-            IConsultaRepository repo)
+            IConsultaRepository repo,
+            IUsuarioService usuarioService)
         {
             _logger = logger;
             _repo = repo;
+            _usuarioService = usuarioService;
         }
 
         // ====================================================================
@@ -282,16 +285,16 @@ namespace SistemaHospitalar_API.Application.Services
             // ============================================================
 
             // Valida se médico existe e está ativo
-            var medicoAtivo = consultasMedico.Any(); // Se retornou consultas, o médico existe
-            if (!medicoAtivo)
+            var medicoAtivo = await _usuarioService.ObterUsuarioPorId(dto.MedicoId);
+            if (!medicoAtivo!.IsMedico == true || !medicoAtivo.Status == true)
             {
                 _logger.LogWarning("Médico não encontrado ou inativo. ID: {medicoId}", dto.MedicoId);
                 throw new InvalidOperationException("Médico não encontrado ou inativo.");
             }
 
             // Valida se paciente existe e está ativo
-            var pacienteAtivo = consultasPaciente.Any(); // Se retornou consultas, o paciente existe
-            if (!pacienteAtivo)
+            var pacienteAtivo = await _usuarioService.ObterUsuarioPorId(dto.PacienteId);
+            if (!pacienteAtivo!.IsPaciente == true || !pacienteAtivo.Status == true)
             {
                 _logger.LogWarning("Paciente não encontrado ou inativo. ID: {pacienteId}", dto.PacienteId);
                 throw new InvalidOperationException("Paciente não encontrado ou inativo.");

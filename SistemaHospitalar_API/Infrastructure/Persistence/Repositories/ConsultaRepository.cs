@@ -138,9 +138,17 @@ namespace SistemaHospitalar_API.Infrastructure.Persistence.Repositories
         // ============================================================================
         public async Task<Consulta> CriarConsulta(Consulta consulta)
         {
-            await _context.Consultas.AddAsync(consulta);
+            _context.Consultas.Add(consulta);
             await _context.SaveChangesAsync();
-            return consulta;
+
+            return await _context.Consultas
+                .Include(c => c.Paciente)
+                    .ThenInclude(p => p.Usuario)
+                .Include(c => c.Medico)
+                    .ThenInclude(m => m.Usuario)
+                .Include(c => c.Medico)
+                    .ThenInclude(m => m.Especialidade)
+                .FirstOrDefaultAsync(c => c.Id == consulta.Id);
         }
 
         // ============================================================================

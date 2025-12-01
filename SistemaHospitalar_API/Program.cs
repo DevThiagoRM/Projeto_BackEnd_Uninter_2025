@@ -75,8 +75,14 @@ builder.Services
 // =======================================================
 // CONTROLLERS
 // =======================================================
-builder.Services.AddControllers()
-    .AddJsonOptions(o => o.JsonSerializerOptions.PropertyNamingPolicy = null);
+builder.Services
+    .AddControllers()
+    .AddJsonOptions(o =>
+    {
+        o.JsonSerializerOptions.PropertyNamingPolicy = null;
+        o.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+    });
+
 
 // =======================================================
 // REPOSITORIES

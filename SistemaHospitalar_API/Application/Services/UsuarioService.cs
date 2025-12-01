@@ -68,7 +68,8 @@ namespace SistemaHospitalar_API.Application.Services
                     Cpf = u.Paciente.Cpf
                 },
                 IsMedico = u.Medico != null,
-                IsPaciente = u.Paciente != null
+                IsPaciente = u.Paciente != null,
+                Status = u.Status != null
             });
 
             _logger.LogInformation("Consulta concluída. Total de usuários retornados: {count}", resultado.Count());
@@ -116,7 +117,8 @@ namespace SistemaHospitalar_API.Application.Services
                     Cpf = usuario.Paciente.Cpf
                 },
                 IsMedico = usuario.Medico != null,
-                IsPaciente = usuario.Paciente != null
+                IsPaciente = usuario.Paciente != null,
+                Status = usuario.Status != null
             };
         }
 
@@ -160,7 +162,8 @@ namespace SistemaHospitalar_API.Application.Services
                     Cpf = usuario.Paciente.Cpf
                 },
                 IsMedico = usuario.Medico != null,
-                IsPaciente = usuario.Paciente != null
+                IsPaciente = usuario.Paciente != null,
+                Status = usuario.Status != null
             };
         }
 
@@ -198,7 +201,9 @@ namespace SistemaHospitalar_API.Application.Services
                 DataNascimento = dto.DataNascimento,
                 Email = dto.Email,
                 UserName = dto.Email,
-                PhoneNumber = dto.PhoneNumber
+                PhoneNumber = dto.PhoneNumber,
+                IsMedico = dto.IsMedico,
+                IsPaciente = dto.IsPaciente
             };
 
             var result = await _userManager.CreateAsync(novoUsuario, dto.Password);
