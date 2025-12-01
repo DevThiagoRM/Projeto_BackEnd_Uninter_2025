@@ -148,6 +148,7 @@ namespace SistemaHospitalar_API.Application.Services
                 new Claim(ClaimTypes.Email, user.Email!),
                 new Claim(ClaimTypes.Name, user.NomeCompleto),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+
             };
 
             var roles = await _userManager.GetRolesAsync(user);

@@ -22,7 +22,6 @@ namespace SistemaHospitalar_API.Controllers
         // ========================================================================
         // GET ALL
         // ========================================================================
-        [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<VisualizarConsultaDto>>> ObterConsultas()
         {
@@ -43,7 +42,6 @@ namespace SistemaHospitalar_API.Controllers
         // ========================================================================
         // GET BY ID
         // ========================================================================
-        [Authorize]
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<VisualizarConsultaDto>> ObterConsultaPorId(Guid id)
         {
@@ -70,7 +68,6 @@ namespace SistemaHospitalar_API.Controllers
         // ========================================================================
         // GET BY MEDICO ID
         // ========================================================================
-        [Authorize]
         [HttpGet("medico/{medicoId:guid}")]
         public async Task<ActionResult<IEnumerable<VisualizarConsultaDto>>> ObterConsultasPorMedicoId(Guid medicoId)
         {
@@ -90,7 +87,6 @@ namespace SistemaHospitalar_API.Controllers
         // ========================================================================
         // GET BY PACIENTE ID
         // ========================================================================
-        [Authorize]
         [HttpGet("paciente/{pacienteId:guid}")]
         public async Task<ActionResult<IEnumerable<VisualizarConsultaDto>>> ObterConsultasPorPacienteId(Guid pacienteId)
         {
@@ -110,7 +106,6 @@ namespace SistemaHospitalar_API.Controllers
         // ========================================================================
         // GET BY MEDICO NOME
         // ========================================================================
-        [Authorize]
         [HttpGet("medico/nome/{nome}")]
         public async Task<ActionResult<IEnumerable<VisualizarConsultaDto>>> ObterConsultasPorMedicoNome(string nome)
         {
@@ -130,7 +125,6 @@ namespace SistemaHospitalar_API.Controllers
         // ========================================================================
         // GET BY PACIENTE NOME
         // ========================================================================
-        [Authorize]
         [HttpGet("paciente/nome/{nome}")]
         public async Task<ActionResult<IEnumerable<VisualizarConsultaDto>>> ObterConsultasPorPacienteNome(string nome)
         {
@@ -150,7 +144,6 @@ namespace SistemaHospitalar_API.Controllers
         // ========================================================================
         // GET BY PERÍODO
         // ========================================================================
-        [Authorize]
         [HttpGet("periodo")]
         public async Task<ActionResult<IEnumerable<VisualizarConsultaDto>>> ObterConsultasPorPeriodo(
             [FromQuery] DateTime? dataInicial,
@@ -177,7 +170,6 @@ namespace SistemaHospitalar_API.Controllers
         // ========================================================================
         // POST
         // ========================================================================
-        [Authorize(Roles = "ADMIN,RECEPCAO")]
         [HttpPost]
         public async Task<ActionResult<VisualizarConsultaDto>> CriarConsulta([FromBody] CriarConsultaDto dto)
         {
@@ -203,7 +195,6 @@ namespace SistemaHospitalar_API.Controllers
         // ========================================================================
         // PUT
         // ========================================================================
-        [Authorize(Roles = "ADMIN,RECEPCAO")]
         [HttpPut("{id:guid}")]
         public async Task<ActionResult<VisualizarConsultaDto>> EditarConsulta(Guid id, [FromBody] EditarConsultaDto dto)
         {
@@ -235,7 +226,6 @@ namespace SistemaHospitalar_API.Controllers
         // ========================================================================
         // CANCELAR CONSULTA
         // ========================================================================
-        [Authorize(Roles = "ADMIN,RECEPCAO")]
         [HttpDelete("{id:guid}")]
         public async Task<ActionResult> CancelarConsulta(Guid id, [FromQuery] string motivo)
         {

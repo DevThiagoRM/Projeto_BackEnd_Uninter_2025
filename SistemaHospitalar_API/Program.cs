@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+ï»¿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -14,12 +14,15 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-//=======================================================
-// JWT Configuration
-//=======================================================
+// =======================================================
+// JWT SETTINGS
+// =======================================================
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = Encoding.ASCII.GetBytes(jwtSettings["SecretKey"] ?? "SuperSecretKey@2025HospitalarAPI");
+var secretKey = Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]!);
 
+// =======================================================
+// AUTHENTICATION + JWT
+// =======================================================
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -29,29 +32,34 @@ builder.Services.AddAuthentication(options =>
 {
     options.RequireHttpsMetadata = false;
     options.SaveToken = true;
+
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(secretKey),
+
         ValidateIssuer = true,
-        ValidateAudience = true,
         ValidIssuer = jwtSettings["Issuer"],
+
+        ValidateAudience = true,
         ValidAudience = jwtSettings["Audience"],
+
+        ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero
     };
 });
 
-//=======================================================
-// DbContext
-//=======================================================
+// =======================================================
+// DB CONTEXT
+// =======================================================
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("ApiConnectionString"));
 });
 
-//=======================================================
-// Identity
-//=======================================================
+// =======================================================
+// IDENTITY CONFIG
+// =======================================================
 builder.Services
     .AddIdentity<Usuario, IdentityRole<Guid>>(options =>
     {
@@ -59,30 +67,28 @@ builder.Services
         options.Password.RequireUppercase = true;
         options.Password.RequiredLength = 8;
         options.Password.RequireNonAlphanumeric = true;
-
-        // Configurações de lockout (opcional)
-        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(30);
-        options.Lockout.MaxFailedAccessAttempts = 5;
     })
+    .AddRoles<IdentityRole<Guid>>()
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
-//=======================================================
-// Controllers
-//=======================================================
-builder.Services.AddControllers();
+// =======================================================
+// CONTROLLERS
+// =======================================================
+builder.Services.AddControllers()
+    .AddJsonOptions(o => o.JsonSerializerOptions.PropertyNamingPolicy = null);
 
-//=======================================================
-// Repositories
-//=======================================================
+// =======================================================
+// REPOSITORIES
+// =======================================================
 builder.Services.AddScoped<IEspecialidadeRepository, EspecialidadeRepository>();
 builder.Services.AddScoped<IConsultaRepository, ConsultaRepository>();
 builder.Services.AddScoped<IMedicoRepository, MedicoRepository>();
 builder.Services.AddScoped<IPacienteRepository, PacienteRepository>();
 
-//=======================================================
-// Services
-//=======================================================
+// =======================================================
+// SERVICES
+// =======================================================
 builder.Services.AddScoped<IEspecialidadeService, EspecialidadeService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IConsultaService, ConsultaService>();
@@ -90,26 +96,27 @@ builder.Services.AddScoped<IMedicoService, MedicoService>();
 builder.Services.AddScoped<IPacienteService, PacienteService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-//=======================================================
-// Swagger com suporte a JWT
-//=======================================================
+// =======================================================
+// SWAGGER + JWT
+// =======================================================
+builder.Services.AddEndpointsApiExplorer();
+
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "API Sistema Hospitalar",
-        Version = "v1",
-        Description = "API para gerenciamento de consultas, médicos, pacientes e especialidades."
+        Version = "v1"
     });
 
-    // Configuração do JWT no Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        Description = "Insira: Bearer {seu token}"
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -126,44 +133,35 @@ builder.Services.AddSwaggerGen(c =>
             new string[] {}
         }
     });
-
-    // Habilitar XML Documentation
-    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    if (File.Exists(xmlPath))
-        c.IncludeXmlComments(xmlPath);
 });
 
-builder.Services.AddEndpointsApiExplorer();
-
+// =======================================================
+// APP BUILD
+// =======================================================
 var app = builder.Build();
 
-//=======================================================
-// SEED INICIAL DO BANCO DE DADOS
-//=======================================================
+// =======================================================
+// SEED DATABASE
+// =======================================================
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     try
     {
-        // Aplicar migrations automaticamente (opcional)
         var context = services.GetRequiredService<AppDbContext>();
         await context.Database.MigrateAsync();
 
-        // Executar seed usando a classe correta
         await DatabaseSeeder.SeedAsync(services);
-
-        Console.WriteLine("Seed inicial aplicado com sucesso!");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Erro durante o seed: {ex.Message}");
+        Console.WriteLine($"Seed Error: {ex.Message}");
     }
 }
 
-//=======================================================
-// Middleware Pipeline
-//=======================================================
+// =======================================================
+// MIDDLEWARE PIPELINE
+// =======================================================
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -172,8 +170,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// IMPORTANTE: Authentication antes de Authorization
-app.UseAuthentication();
+app.UseAuthentication();  // ðŸ‘ˆ IMPORTANTE
 app.UseAuthorization();
 
 app.MapControllers();

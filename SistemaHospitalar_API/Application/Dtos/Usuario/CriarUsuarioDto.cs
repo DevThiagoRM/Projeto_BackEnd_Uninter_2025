@@ -23,9 +23,6 @@ namespace SistemaHospitalar_API.Application.Dtos.Usuario
         [Required]
         public string Password { get; set; } = string.Empty;
 
-        [Required]
-        public string TipoUsuario { get; set; } = string.Empty;
-
         public string? PhoneNumber { get; set; }
 
         public CriarMedicoDto? Medico { get; set; }
