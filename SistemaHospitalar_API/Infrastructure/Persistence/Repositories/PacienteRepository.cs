@@ -46,5 +46,12 @@ namespace SistemaHospitalar_API.Infrastructure.Persistence.Repositories
 
             return await _context.SaveChangesAsync() > 0;
         }
+
+        public async Task<Paciente> ObterPacientePorCpf(string cpf)
+        {
+            return await _context.Pacientes
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.Cpf == cpf);
+        }
     }
 }

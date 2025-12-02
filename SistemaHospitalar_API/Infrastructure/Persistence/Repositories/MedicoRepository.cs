@@ -53,5 +53,12 @@ namespace SistemaHospitalar_API.Infrastructure.Persistence.Repositories
 
             return await _context.SaveChangesAsync() > 0;
         }
+
+        public async Task<Medico> ObterMedicoPorCRM(string crm)
+        {
+            return await _context.Medicos
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.CRM == crm);
+        }
     }
 }

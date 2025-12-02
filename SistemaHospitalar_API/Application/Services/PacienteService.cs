@@ -1,5 +1,6 @@
 ﻿using SistemaHospitalar_API.Application.Constructors.Repositories;
 using SistemaHospitalar_API.Application.Constructors.Services;
+using SistemaHospitalar_API.Application.Dtos.Medico;
 using SistemaHospitalar_API.Application.Dtos.Paciente;
 using SistemaHospitalar_API.Domain.Entities;
 
@@ -16,6 +17,27 @@ namespace SistemaHospitalar_API.Application.Services
         {
             _logger = logger;
             _repo = repo;
+        }
+
+        // ======================
+        // GET
+        // ======================
+        public async Task<VisualizarPacienteDto> ObterPacientePorCpf(string cpf)
+        {
+            _logger.LogInformation("Consultando CPF: {cpf}", cpf);
+
+            var especialidade = await _repo.ObterPacientePorCpf(cpf);
+
+            if (especialidade == null)
+            {
+                _logger.LogWarning("CRM não encontrado: {cpf}", cpf);
+                return null;
+            }
+
+            return new VisualizarPacienteDto
+            {
+                Cpf = cpf
+            };
         }
 
         // ======================
@@ -89,5 +111,7 @@ namespace SistemaHospitalar_API.Application.Services
             _logger.LogInformation("Paciente excluído com sucesso para usuário ID: {id}", id);
             return true;
         }
+
+        
     }
 }

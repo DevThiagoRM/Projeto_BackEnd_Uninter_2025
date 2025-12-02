@@ -1,5 +1,6 @@
 ﻿using SistemaHospitalar_API.Application.Constructors.Repositories;
 using SistemaHospitalar_API.Application.Constructors.Services;
+using SistemaHospitalar_API.Application.Dtos.Especialidade;
 using SistemaHospitalar_API.Application.Dtos.Medico;
 using SistemaHospitalar_API.Domain.Entities;
 
@@ -16,6 +17,27 @@ namespace SistemaHospitalar_API.Application.Services
         {
             _logger = logger;
             _repo = repo;
+        }
+
+        // ======================
+        // GET
+        // ======================
+        public async Task<VisualizarMedicoDto?> ObterMedicoPorCRM(string crm)
+        {
+            _logger.LogInformation("Consultando CRM: {crm}", crm);
+
+            var especialidade = await _repo.ObterMedicoPorCRM(crm);
+
+            if (especialidade == null)
+            {
+                _logger.LogWarning("CRM não encontrado: {crm}", crm);
+                return null;
+            }
+
+            return new VisualizarMedicoDto
+            {
+                CRM = crm
+            };
         }
 
         // ======================

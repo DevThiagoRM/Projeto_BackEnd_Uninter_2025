@@ -174,12 +174,14 @@ namespace SistemaHospitalar_API.Application.Services
         {
             _logger.LogInformation("Iniciando criação de usuário. Email: {email}", dto.Email);
 
+            // Validação de email único
             if (await _userManager.FindByEmailAsync(dto.Email) != null)
             {
                 _logger.LogWarning("Erro ao criar: email já está em uso: {email}", dto.Email);
                 throw new ArgumentException($"Usuário com o email {dto.Email} já existe.");
             }
 
+            // Validação de CPF único para paciente
             if (dto.IsPaciente && dto.Paciente != null)
             {
                 if (string.IsNullOrWhiteSpace(dto.Paciente.Cpf))
@@ -191,6 +193,14 @@ namespace SistemaHospitalar_API.Application.Services
                 {
                     _logger.LogWarning("CPF inválido informado: {cpf}", dto.Paciente.Cpf);
                     throw new ArgumentException("CPF inválido.");
+                }
+
+                // Verificar se já existe um paciente com o mesmo CPF
+                var pacienteExistente = await _pacienteService.ObterPacientePorCpf(dto.Paciente.Cpf);
+                if (pacienteExistente != null)
+                {
+                    _logger.LogWarning("CPF já cadastrado: {cpf}", dto.Paciente.Cpf);
+                    throw new ArgumentException($"CPF {dto.Paciente.Cpf} já está em uso.");
                 }
             }
 
@@ -220,6 +230,7 @@ namespace SistemaHospitalar_API.Application.Services
 
             await _userManager.AddToRoleAsync(novoUsuario, role);
 
+            // Validação de CRM único para médico e criação do médico
             if (dto.IsMedico && dto.Medico != null)
             {
                 _logger.LogInformation("Criando médico para o usuário ID: {id}", novoUsuario.Id);
@@ -228,6 +239,14 @@ namespace SistemaHospitalar_API.Application.Services
                 {
                     _logger.LogWarning("CRM do médico não informado.");
                     throw new ArgumentException("CRM do médico é obrigatório.");
+                }
+
+                // Verificar se já existe um médico com o mesmo CRM
+                var medicoExistente = await _medicoService.ObterMedicoPorCRM(dto.Medico.CRM);
+                if (medicoExistente != null)
+                {
+                    _logger.LogWarning("CRM já cadastrado: {crm}", dto.Medico.CRM);
+                    throw new ArgumentException($"CRM {dto.Medico.CRM} já está em uso.");
                 }
 
                 var especialidade = await _especialidadeService.ObterEspecialidadePorId(dto.Medico.EspecialidadeId);
@@ -297,14 +316,60 @@ namespace SistemaHospitalar_API.Application.Services
                 throw new ArgumentException($"Nenhum usuário encontrado com id: {id}");
             }
 
+            // Validação de email único (se estiver alterando o email)
+            if (!string.IsNullOrEmpty(dto.Email) && dto.Email != usuarioAtual.Email)
+            {
+                var emailExistente = await _userManager.FindByEmailAsync(dto.Email);
+                if (emailExistente != null)
+                {
+                    _logger.LogWarning("Erro ao editar: email já está em uso: {email}", dto.Email);
+                    throw new ArgumentException($"Usuário com o email {dto.Email} já existe.");
+                }
+            }
+
+            // Validação de CPF único para paciente
+            if (dto.IsPaciente && dto.Paciente != null)
+            {
+                if (string.IsNullOrWhiteSpace(dto.Paciente.Cpf))
+                {
+                    _logger.LogWarning("CPF do paciente não informado.");
+                    throw new ArgumentException("CPF é obrigatório.");
+                }
+
+                if (!ValidarCPF(dto.Paciente.Cpf))
+                {
+                    _logger.LogWarning("CPF inválido informado: {cpf}", dto.Paciente.Cpf);
+                    throw new ArgumentException("CPF inválido.");
+                }
+
+                // Verificar se já existe um paciente com o mesmo CPF (que não seja o atual)
+                var pacienteExistente = await _pacienteService.ObterPacientePorCpf(dto.Paciente.Cpf);
+                if (pacienteExistente != null)
+                {
+                    // Obter o paciente atual do usuário (se existir) para comparar
+                    var pacienteAtual = await ObterPacienteAtualDoUsuario(id);
+                    if (pacienteAtual == null || pacienteExistente.Cpf != pacienteAtual.Cpf)
+                    {
+                        _logger.LogWarning("CPF já cadastrado: {cpf}", dto.Paciente.Cpf);
+                        throw new ArgumentException($"CPF {dto.Paciente.Cpf} já está em uso.");
+                    }
+                }
+            }
+
             _logger.LogDebug("Valores atuais: NomeCompleto={nome}, NomeExibicao={exibicao}, Email={email}",
                 usuarioAtual.NomeCompleto, usuarioAtual.NomeExibicao, usuarioAtual.Email);
 
             usuarioAtual.NomeCompleto = dto.NomeCompleto ?? usuarioAtual.NomeCompleto;
             usuarioAtual.NomeExibicao = dto.NomeExibicao ?? usuarioAtual.NomeExibicao;
             usuarioAtual.DataNascimento = dto.DataNascimento ?? usuarioAtual.DataNascimento;
-            usuarioAtual.Email = dto.Email ?? usuarioAtual.Email;
-            usuarioAtual.UserName = dto.Email ?? usuarioAtual.UserName;
+
+            // Atualizar email apenas se fornecido e diferente
+            if (!string.IsNullOrEmpty(dto.Email) && dto.Email != usuarioAtual.Email)
+            {
+                usuarioAtual.Email = dto.Email;
+                usuarioAtual.UserName = dto.Email;
+            }
+
             usuarioAtual.PhoneNumber = dto.PhoneNumber ?? usuarioAtual.PhoneNumber;
 
             var result = await _userManager.UpdateAsync(usuarioAtual);
@@ -314,9 +379,37 @@ namespace SistemaHospitalar_API.Application.Services
                 throw new Exception("Erro ao atualizar usuário.");
             }
 
+            // Validação de CRM único para médico e edição do médico
             if (dto.IsMedico && dto.Medico != null)
             {
                 _logger.LogInformation("Editando dados de médico para usuário ID: {id}", id);
+
+                if (string.IsNullOrWhiteSpace(dto.Medico.CRM))
+                {
+                    _logger.LogWarning("CRM do médico não informado.");
+                    throw new ArgumentException("CRM do médico é obrigatório.");
+                }
+
+                // Verificar se já existe um médico com o mesmo CRM (que não seja o atual)
+                var medicoExistente = await _medicoService.ObterMedicoPorCRM(dto.Medico.CRM);
+                if (medicoExistente != null)
+                {
+                    // Obter o médico atual do usuário (se existir) para comparar
+                    var medicoAtual = await ObterMedicoAtualDoUsuario(id);
+                    if (medicoAtual == null || medicoExistente.CRM != medicoAtual.CRM)
+                    {
+                        _logger.LogWarning("CRM já cadastrado: {crm}", dto.Medico.CRM);
+                        throw new ArgumentException($"CRM {dto.Medico.CRM} já está em uso.");
+                    }
+                }
+
+                var especialidade = await _especialidadeService.ObterEspecialidadePorId(dto.Medico.EspecialidadeId);
+                if (especialidade == null)
+                {
+                    _logger.LogWarning("Especialidade inválida para ID: {id}", dto.Medico.EspecialidadeId);
+                    throw new ArgumentException("Especialidade inválida.");
+                }
+
                 await _medicoService.EditarMedico(id, dto.Medico);
             }
 
@@ -348,6 +441,35 @@ namespace SistemaHospitalar_API.Application.Services
                 IsMedico = dto.IsMedico,
                 IsPaciente = dto.IsPaciente
             };
+        }
+
+        // Método auxiliar para obter o paciente atual do usuário
+        private async Task<VisualizarPacienteDto?> ObterPacienteAtualDoUsuario(Guid usuarioId)
+        {
+            var usuarioCompleto = await _userManager.Users
+                .Include(u => u.Paciente)
+                .FirstOrDefaultAsync(u => u.Id == usuarioId);
+
+            return usuarioCompleto?.Paciente != null
+                ? new VisualizarPacienteDto { Cpf = usuarioCompleto.Paciente.Cpf }
+                : null;
+        }
+
+        // Método auxiliar para obter o médico atual do usuário
+        private async Task<VisualizarMedicoDto?> ObterMedicoAtualDoUsuario(Guid usuarioId)
+        {
+            var usuarioCompleto = await _userManager.Users
+                .Include(u => u.Medico)
+                .ThenInclude(m => m.Especialidade)
+                .FirstOrDefaultAsync(u => u.Id == usuarioId);
+
+            return usuarioCompleto?.Medico != null
+                ? new VisualizarMedicoDto
+                {
+                    CRM = usuarioCompleto.Medico.CRM,
+                    Especialidade = usuarioCompleto.Medico.Especialidade?.Nome ?? ""
+                }
+                : null;
         }
 
         // ======================
